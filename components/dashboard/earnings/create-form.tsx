@@ -16,9 +16,9 @@ import {
 } from '@/components/ui/select';
 
 const DUMMY_CLIENTS = [
-  { id: '1', name: 'TechCorp' },
-  { id: '2', name: 'InnovateX' },
-  { id: '3', name: 'MarketingPro' },
+  { id: '1', name: 'Tabata' },
+  { id: '2', name: 'AURA' },
+  { id: '3', name: 'Fitness Shop' },
 ];
 
 export function CreateEarningForm() {
@@ -27,7 +27,7 @@ export function CreateEarningForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      
+
       <div className="space-y-2">
         <Label htmlFor="concept">Concepto</Label>
         <Input
@@ -43,6 +43,8 @@ export function CreateEarningForm() {
         </div>
       </div>
 
+      
+      
       <div className="space-y-2">
         <Label htmlFor="client">Cliente</Label>
         <Select name="client">
@@ -63,35 +65,54 @@ export function CreateEarningForm() {
           )}
         </div>
       </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="amount">Monto</Label>
-        <Input
-          id="amount"
-          name="amount"
-          type="number"
-          step="0.01"
-          placeholder="Ej: 50000"
-          aria-describedby="amount-error"
-        />
-        <div id="amount-error" aria-live="polite" aria-atomic="true">
-          {state.errors?.amount && (
-            <p className="text-sm text-red-500">{state.errors.amount[0]}</p>
-          )}
+
+
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2 col-span-2">
+          <Label htmlFor="amount">Monto</Label>
+          <Input
+            id="amount"
+            name="amount"
+            type="number"
+            step="0.01"
+            placeholder="Ej: 50000"
+            aria-describedby="amount-error"
+          />
+          <div id="amount-error" aria-live="polite" aria-atomic="true">
+            {state.errors?.amount && (
+              <p className="text-sm text-red-500">{state.errors.amount[0]}</p>
+            )}
+          </div>
+        </div>
+
+
+
+        <div className="space-y-2">
+          <Label htmlFor="currency">Moneda</Label>
+          <Select name="currency" defaultValue="ARS">
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ARS">ARS</SelectItem>
+              <SelectItem value="USD">USD</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
+
+
+
 
       <div className="space-y-2">
         <Label htmlFor="status">Estado</Label>
         <Select name="status" defaultValue="Facturado">
-            <SelectTrigger aria-describedby="status-error">
-                <SelectValue placeholder="Selecciona un estado" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="Facturado">Facturado</SelectItem>
-                <SelectItem value="Pagado">Pagado</SelectItem>
-                <SelectItem value="Atrasado">Atrasado</SelectItem>
-            </SelectContent>
+          <SelectTrigger aria-describedby="status-error">
+            <SelectValue placeholder="Selecciona un estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Facturado">Facturado</SelectItem>
+            <SelectItem value="Por cobrar">Por cobrar</SelectItem>
+          </SelectContent>
         </Select>
         <div id="status-error" aria-live="polite" aria-atomic="true">
           {state.errors?.status && (
@@ -101,20 +122,21 @@ export function CreateEarningForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="dueDate">Fecha de Vencimiento</Label>
+        <Label htmlFor="dueDate">Fecha de Cobro</Label>
         <Input
-            id="dueDate"
-            name="dueDate"
-            type="date"
-            aria-describedby="dueDate-error"
+          id="dueDate"
+          name="dueDate"
+          type="date"
+          aria-describedby="dueDate-error"
+          defaultValue={new Date().toISOString().split('T')[0]}
         />
         <div id="dueDate-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.dueDate && (
-                <p className="text-sm text-red-500">{state.errors.dueDate[0]}</p>
-            )}
+          {state.errors?.dueDate && (
+            <p className="text-sm text-red-500">{state.errors.dueDate[0]}</p>
+          )}
         </div>
       </div>
-      
+
       {state.message && (
         <p className="text-sm text-red-500">{state.message}</p>
       )}
