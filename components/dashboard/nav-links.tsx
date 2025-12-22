@@ -10,13 +10,13 @@ import Link from 'next/link';
 import clsx from 'clsx';
 
 // Map of links to display in the side navigation.
-// Depending on the size of the application, this would be stored in a database.
+// DePendiente on the size of the application, this would be stored in a database.
 const links = [
   { name: 'Home', href: '/dashboard', icon: HomeIcon },
-  { name: 'Ingresos', href: '/dashboard/finances/earnings', icon: DocumentDuplicateIcon,},
+  { name: 'Ingresos', href: '/dashboard/finances/invoices', icon: DocumentDuplicateIcon,},
   { name: 'Gastos', href: '/dashboard/finances/expenses', icon: UserGroupIcon },
-  { name: 'Tarjetas', href: '/dashboard/finances/cards', icon: UserGroupIcon },
-  { name: 'Ahorro en Dolares', href: '/dashboard/finances/cards', icon: UserGroupIcon },
+  { name: 'Banking', href: '/dashboard/finances/cards', icon: UserGroupIcon },
+  { name: 'Clientes', href: '/dashboard/finances/clients', icon: UserGroupIcon },
   { name: 'Agenda', href: '/dashboard/calendary', icon: UserGroupIcon },
   { name: 'Lista de tareas', href: '/dashboard/to-do-list', icon: UserGroupIcon },
 ];

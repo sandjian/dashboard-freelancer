@@ -1,163 +1,131 @@
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
-import { CreateExpensesForm } from "@/components/dashboard/expenses/create-form";
-import { fetchExpenses, fetchTotalExpenses } from "@/lib/data"; // Importamos fetchTotalExpenses
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { deleteExpense } from "@/lib/actions";
-import Link from "next/link";
+  // 👇 1. Reemplazamos 'fetchTotalExpenses' por las nuevas funciones
+  fetchExpenseStats,
+  fetchVendors,
+  fetchExpenseCategories,
+  fetchCards,
+  fetchCardPaymentsDueForMonth,
+} from '@/lib/data';
+import Search from '@/components/ui/search';
+import { Button } from '@/components/ui/button';
+import { ExpensesTable } from '@/components/dashboard/finances/expenses/expenses-table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CreateExpenseForm } from '@/components/dashboard/finances/expenses/create-form';
+import { Suspense } from 'react';
+import { ExpensesTableSkeleton } from '@/components/ui/skeletons';
+import { DateNavigator } from '@/components/dashboard/month-year-selector';
+// 👇 2. Reutilizamos el componente KpiCard de Invoices (podemos renombrarlo a KpiCard en el futuro)
+import { InvoiceKpiCard } from '@/components/dashboard/finances/invoices/kpi-card';
+import { ExpenseStatusButtons } from '@/components/dashboard/finances/expenses/status-filter';
 
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams?: { year?: string; month?: string; };
+  searchParams?: { 
+    year?: string; 
+    month?: string; 
+    query?: string; 
+    page?: string;
+    categoryId?: string;
+    status?: string;
+  };
 }) {
-  // 👇 LA SOLUCIÓN: Resolvemos los searchParams asíncronamente
-  const resolvedSearchParams = await Promise.resolve(searchParams);
+
+  console.log('--- INICIO DE RENDERIZADO EN SERVIDOR ---');
+  console.log('[SERVIDOR - ExpensesPage] searchParams recibidos:', searchParams);
+ const resolvedSearchParams = await Promise.resolve(searchParams);
+
+  // 👇 2. Ahora, leemos de la caja abierta (el objeto resuelto)
   const year = Number(resolvedSearchParams?.year) || new Date().getFullYear();
   const month = Number(resolvedSearchParams?.month) || new Date().getMonth() + 1;
+  const query = resolvedSearchParams?.query || '';
+  const currentPage = Number(resolvedSearchParams?.page) || 1;
+  const categoryId = resolvedSearchParams?.categoryId || null;
+  const status = resolvedSearchParams?.status || null;
 
-  const [expenses, totalExpenses] = await Promise.all([
-    fetchExpenses(year, month), // Pasa el mes y año a la función
-    fetchTotalExpenses(year, month),
+
+  console.log(`[SERVIDOR - ExpensesPage] Valor de 'status' interpretado:`, status);
+  console.log(`[SERVIDOR - ExpensesPage] Valor de 'categoryId' interpretado:`, categoryId);
+
+  // 👇 3. Llamamos a las nuevas funciones para obtener las estadísticas
+  const [
+    expenseStats,
+    cardPaymentsDue,
+    vendors,
+    categories,
+    cards
+  ] = await Promise.all([
+    fetchExpenseStats(year, month),
+    fetchCardPaymentsDueForMonth(year, month),
+    fetchVendors(),
+    fetchExpenseCategories(),
+    fetchCards(),
   ]);
+
+  
+  // Calculamos los porcentajes para los KPIs mensuales
+  const totalAmount = expenseStats.totalAmount || 1; 
+  const recurringPercentage = (expenseStats.recurringAmount / totalAmount) * 100;
+  const pendingPercentage = (expenseStats.pendingAmount / totalAmount) * 100;
+
   return (
-    <div className="p-4 sm:p-6 md:p-8">
-      {/* SECCIÓN DE KPIs (Ahora con datos dinámicos) */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Gastado (Mes)</CardTitle>
-            <span className="text-red-500">💸</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(totalExpenses)}
-            </div>
-            <p className="text-xs text-muted-foreground">Gastos del mes seleccionado</p>
-          </CardContent>
-        </Card>
-        {/* Nota: La card de "Gastos en comida" sigue siendo un placeholder. 
-            Podríamos crear una función específica para ello más adelante. */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos en comida</CardTitle>
-            <span className="text-orange-500">🍔</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$195,000.00</div>
-            <p className="text-xs text-muted-foreground">2% vs mes pasado</p>
-          </CardContent>
-        </Card>
+    <div className="p-4 w-full m-auto max-w-6xl space-y-6">
+      <div className='flex justify-end'>
+        <DateNavigator/>
       </div>
 
-      {/* SECCIÓN DE ACCIONES Y TÍTULO */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Gastos</h1>
+      {/* 👇 4. Renderizamos la nueva grilla de KPIs */}
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <InvoiceKpiCard title="Gasto Mensual" count={expenseStats.totalCount} amount={expenseStats.totalAmount} percentage={100} iconName="total" color="info" />
+        <InvoiceKpiCard title="Gastos Recurrentes" count={expenseStats.recurringCount} amount={expenseStats.recurringAmount} percentage={recurringPercentage} iconName="facturado" color="success" />
+        <InvoiceKpiCard title="Gastos Pendientes" count={expenseStats.pendingCount} amount={expenseStats.pendingAmount} percentage={pendingPercentage} iconName="pendiente" color="warning" />
+        <InvoiceKpiCard 
+          title="Vencimiento Tarjetas (Mes)" 
+          count={cardPaymentsDue.count} 
+          amount={cardPaymentsDue.amount} 
+          iconName="vencido" // Podemos cambiar el ícono a una tarjeta más adelante
+          color="danger" 
+        />
+      </div>
+
+      <div className="flex justify-between items-center ">
+       <div className=" flex items-center justify-between gap-2 ">
+        <div className='flex gap-2'>
+          <Search placeholder="Buscar ..." />
+          <ExpenseStatusButtons />
+        </div>
+        {/* El botón de "Añadir Gasto" ya lo tienes en el div de arriba,
+            así que no lo repetimos aquí para mantener la UI limpia. */}
+      </div>
+       
         <Dialog>
-          <DialogTrigger asChild>
-            <Button>Añadir Gasto</Button>
+          <DialogTrigger asChild className='flex justify-center items-center'>
+            <Button variant={'primary'} className='cursor-pointer'>+ Añadir Gasto</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Gasto</DialogTitle>
+              <DialogTitle className='text-black/70'>Crear Nuevo Gasto</DialogTitle>
+              <DialogDescription>Rellena los campos para registrar un nuevo gasto.</DialogDescription>
             </DialogHeader>
-            <CreateExpensesForm />
+            <CreateExpenseForm vendors={vendors} categories={categories} cards={cards} />
           </DialogContent>
         </Dialog>
+      
       </div>
+      
+      
 
-      {/* TABLA DE GASTOS */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[250px]">Concepto</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>
-                <span className="sr-only">Acciones</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id}>
-                <TableCell className="font-medium">{expense.concept}</TableCell>
-                <TableCell>{expense.category}</TableCell>
-                <TableCell>{expense.expenseDate.toLocaleDateString('es-AR')}</TableCell>
-                <TableCell className="text-right">
-                  {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(expense.amount)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <AlertDialog>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <Link href={`/dashboard/expenses/${expense.id}/edit`}>
-                          <DropdownMenuItem>Editar</DropdownMenuItem>
-                        </Link>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem className="text-red-500">Eliminar</DropdownMenuItem>
-                        </AlertDialogTrigger>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta acción no se puede deshacer. Esto eliminará permanentemente el gasto de tus registros.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <form action={deleteExpense}>
-                          <input type="hidden" name="id" value={expense.id} />
-                          <AlertDialogAction type="submit">Continuar</AlertDialogAction>
-                        </form>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+
+      <Suspense key={query + currentPage + year + month + categoryId + status} fallback={<ExpensesTableSkeleton />}>
+        <ExpensesTable
+          query={query}
+          currentPage={currentPage}
+          year={year}
+          month={month}
+          categoryId={categoryId}
+          status={status} // 👈 Le pasamos el nuevo filtro a la tabla
+        />
+      </Suspense>
     </div>
   );
 }

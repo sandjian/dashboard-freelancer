@@ -7,17 +7,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal } from "lucide-react"
 
 export function GlobalAlert({
-  pendingTransactions,
+  PendienteTransactions,
   year,
   month,
 }: {
-  pendingTransactions: RecurringTransaction[];
+  PendienteTransactions: RecurringTransaction[];
   year: number;
   month: number;
 }) {
-  const pendingCount = pendingTransactions.length;
+  const PendienteCount = PendienteTransactions.length;
 
-  if (pendingCount === 0) {
+  if (PendienteCount === 0) {
     return null; // No muestra nada si no hay pendientes
   }
 
@@ -29,7 +29,7 @@ export function GlobalAlert({
       <AlertTitle>¡Acción Requerida!</AlertTitle>
       <AlertDescription className="flex items-center justify-between">
         <p>
-          {`Tienes ${pendingCount} ${pendingCount === 1 ? 'transacción recurrente pendiente' : 'transacciones recurrentes pendientes'} para este mes.`}
+          {`Tienes ${PendienteCount} ${PendienteCount === 1 ? 'transacción recurrente pendiente' : 'transacciones recurrentes pendientes'} para este mes.`}
         </p>
         <form action={generateAction} className="ml-4">
           <Button type="submit" size="sm">Generar Ahora</Button>

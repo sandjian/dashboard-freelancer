@@ -1,72 +1,88 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { Card, CardContent } from '../ui/card';
 
-const months = [
-  { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },
-  { value: '3', label: 'Marzo' }, { value: '4', label: 'Abril' },
-  { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
-  { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' },
-  { value: '9', label: 'Septiembre' }, { value: '10', label: 'Octubre' },
-  { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' },
+const monthNames = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
-
-export function MonthYearSelector() {
+export function DateNavigator() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  const selectedYear = searchParams.get('year') || String(currentYear);
-  const selectedMonth = searchParams.get('month') || String(new Date().getMonth() + 1);
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
 
-  const handleDateChange = (value: string, type: 'year' | 'month') => {
+  const year = Number(searchParams.get('year')) || currentYear;
+  const month = Number(searchParams.get('month')) || currentMonth;
+
+  const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
     const params = new URLSearchParams(searchParams);
-    params.set(type, value);
-    
-    // Nos aseguramos de que el otro parámetro siempre esté presente en la URL
-    if (type === 'month') {
-        params.set('year', selectedYear);
+    let newYear = year;
+    let newMonth = month;
+
+    if (direction === 'today') {
+      newYear = currentYear;
+      newMonth = currentMonth;
     } else {
-        params.set('month', selectedMonth);
+      const date = new Date(year, month - 1); // JS Date months are 0-indexed
+      if (direction === 'prev') {
+        date.setMonth(date.getMonth() - 1);
+      } else { // next
+        date.setMonth(date.getMonth() + 1);
+      }
+      newYear = date.getFullYear();
+      newMonth = date.getMonth() + 1;
     }
+
+    params.set('year', String(newYear));
+    params.set('month', String(newMonth));
+    params.set('page', '1'); // Reset page to 1 when changing period
     replace(`${pathname}?${params.toString()}`);
   };
 
-  return (
-    <div className="flex gap-4">
-      <Select 
-        value={selectedMonth} 
-        onValueChange={(value) => handleDateChange(value, 'month')}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Mes" />
-        </SelectTrigger>
-        <SelectContent>
-          {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
+  const displayDate = `${monthNames[month - 1]} ${year}`;
 
-      <Select 
-        value={selectedYear} 
-        onValueChange={(value) => handleDateChange(value, 'year')}
+  return (
+    <Card>
+      <CardContent className='flex items-center'>
+
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => handleNavigate('prev')}
+        aria-label="Mes anterior"
       >
-        <SelectTrigger className="w-[120px]">
-          <SelectValue placeholder="Año" />
-        </SelectTrigger>
-        <SelectContent>
-          {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-        </SelectContent>
-      </Select>
-    </div>
+        <ChevronLeftIcon className="h-4 w-4" />
+      </Button>
+      
+      <span className="w-32 text-center font-semibold text-sm">
+        {displayDate}
+      </span>
+      
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => handleNavigate('next')}
+        aria-label="Mes siguiente"
+      >
+        <ChevronRightIcon className="h-4 w-4" />
+      </Button>
+
+      <Button 
+        variant="outline"
+        size="sm"
+        className="ml-2"
+        onClick={() => handleNavigate('today')}
+      >
+        Hoy
+      </Button>
+      </CardContent>
+    </Card>
   );
 }

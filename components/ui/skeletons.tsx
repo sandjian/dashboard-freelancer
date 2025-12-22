@@ -1,3 +1,8 @@
+
+import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
+
+
 // Loading animation
 const shimmer =
   'before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent';
@@ -102,42 +107,6 @@ export default function DashboardSkeleton() {
   );
 }
 
-export function TableRowSkeleton() {
-  return (
-    <tr className="w-full border-b border-gray-100 last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg">
-      {/* Customer Name and Image */}
-      <td className="relative overflow-hidden whitespace-nowrap py-3 pl-6 pr-3">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-gray-100"></div>
-          <div className="h-6 w-24 rounded bg-gray-100"></div>
-        </div>
-      </td>
-      {/* Email */}
-      <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-32 rounded bg-gray-100"></div>
-      </td>
-      {/* Amount */}
-      <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
-      </td>
-      {/* Date */}
-      <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
-      </td>
-      {/* Status */}
-      <td className="whitespace-nowrap px-3 py-3">
-        <div className="h-6 w-16 rounded bg-gray-100"></div>
-      </td>
-      {/* Actions */}
-      <td className="whitespace-nowrap py-3 pl-6 pr-3">
-        <div className="flex justify-end gap-3">
-          <div className="h-[38px] w-[38px] rounded bg-gray-100"></div>
-          <div className="h-[38px] w-[38px] rounded bg-gray-100"></div>
-        </div>
-      </td>
-    </tr>
-  );
-}
 
 export function InvoicesMobileSkeleton() {
   return (
@@ -163,56 +132,141 @@ export function InvoicesMobileSkeleton() {
   );
 }
 
+
+
+
+export function Skeleton({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn('animate-pulse rounded-md bg-muted', className)}
+      {...props}
+    />
+  );
+}
+
+
+
+function TableRowSkeleton() {
+  return (
+    <tr className="w-full border-b border-gray-100 last-of-type:border-none">
+      {/* Celda Cliente */}
+      <td className="relative overflow-hidden whitespace-nowrap py-4 pl-4 pr-3">
+        <div className="h-6 w-24 rounded bg-gray-100"></div>
+      </td>
+      {/* Celda Fecha */}
+      <td className="whitespace-nowrap px-3 py-4">
+        <div className="h-6 w-20 rounded bg-gray-100"></div>
+      </td>
+      {/* Celda Estado */}
+      <td className="whitespace-nowrap px-3 py-4">
+        <div className="h-6 w-16 rounded bg-gray-100"></div>
+      </td>
+      {/* Celda Monto */}
+      <td className="whitespace-nowrap px-3 py-4 text-right">
+        <div className="h-6 w-24 rounded bg-gray-100 ml-auto"></div>
+      </td>
+      {/* Celda Acciones */}
+      <td className="whitespace-nowrap py-4 pl-3 pr-4">
+        <div className="h-8 w-8 rounded-md bg-gray-100 ml-auto"></div>
+      </td>
+    </tr>
+  );
+}
+
 export function InvoicesTableSkeleton() {
   return (
-    <div className="mt-6 flow-root">
-      <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
-          <div className="md:hidden">
-            <InvoicesMobileSkeleton />
-            <InvoicesMobileSkeleton />
-            <InvoicesMobileSkeleton />
-            <InvoicesMobileSkeleton />
-            <InvoicesMobileSkeleton />
-            <InvoicesMobileSkeleton />
-          </div>
-          <table className="hidden min-w-full text-gray-900 md:table">
-            <thead className="rounded-lg text-left text-sm font-normal">
-              <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
-                  Customer
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Email
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Amount
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Date
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="relative pb-4 pl-3 pr-6 pt-2 sm:pr-6"
-                >
-                  <span className="sr-only">Edit</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              <TableRowSkeleton />
-              <TableRowSkeleton />
-              <TableRowSkeleton />
-              <TableRowSkeleton />
-              <TableRowSkeleton />
-              <TableRowSkeleton />
-            </tbody>
-          </table>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Fecha de Emisión</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead className="text-right">Monto</TableHead>
+            <TableHead><span className="sr-only">Acciones</span></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRowSkeleton />
+          <TableRowSkeleton />
+          <TableRowSkeleton />
+          <TableRowSkeleton />
+          <TableRowSkeleton />
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+
+
+function ExpenseTableRowSkeleton() {
+  return (
+    <TableRow className="w-full border-b border-gray-100 last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg">
+      {/* Fecha */}
+      <TableCell className="whitespace-nowrap py-3 pl-6 pr-3">
+        <div className="h-6 w-20 rounded bg-gray-100"></div>
+      </TableCell>
+      {/* Concepto */}
+      <TableCell className="px-3 py-3">
+        <div className="h-6 w-32 rounded bg-gray-100"></div>
+      </TableCell>
+      {/* Categoría */}
+      <TableCell className="px-3 py-3">
+        <div className="h-6 w-24 rounded bg-gray-100"></div>
+      </TableCell>
+      {/* Método de Pago */}
+      <TableCell className="px-3 py-3">
+        <div className="h-6 w-28 rounded bg-gray-100"></div>
+      </TableCell>
+      {/* Estado */}
+      <TableCell className="px-3 py-3">
+        <div className="h-6 w-16 rounded bg-gray-100"></div>
+      </TableCell>
+      {/* Monto */}
+      <TableCell className="whitespace-nowrap px-3 py-3 text-right">
+        <div className="h-6 w-24 rounded bg-gray-100 ml-auto"></div>
+      </TableCell>
+      {/* Acciones */}
+      <TableCell className="whitespace-nowrap py-3 pl-6 pr-3">
+        <div className="flex justify-end gap-3">
+          <div className="h-7 w-7 rounded-full bg-gray-100"></div>
         </div>
-      </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// Esqueleto completo para la tabla de gastos
+export function ExpensesTableSkeleton() {
+  return (
+    <div className={`${shimmer} relative overflow-hidden rounded-md border`}>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {/* Estos son los encabezados de tu tabla real */}
+            <TableHead>Fecha</TableHead>
+            <TableHead>Concepto</TableHead>
+            <TableHead>Categoría</TableHead>
+            <TableHead>Método de Pago</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead className="text-right">Monto</TableHead>
+            <TableHead><span className="sr-only">Acciones</span></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {/* Repetimos el esqueleto de la fila varias veces */}
+          <ExpenseTableRowSkeleton />
+          <ExpenseTableRowSkeleton />
+          <ExpenseTableRowSkeleton />
+          <ExpenseTableRowSkeleton />
+          <ExpenseTableRowSkeleton />
+          <ExpenseTableRowSkeleton />
+        </TableBody>
+      </Table>
     </div>
   );
 }
