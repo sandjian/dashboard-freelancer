@@ -1,0 +1,84 @@
+{
+    "Common": {
+        "dashboard": "Dashboard",
+        "invoices": "Invoices",
+        "expenses": "Expenses",
+        "cards": "Cards",
+        "banking": "Banks",
+        "clients": "Clients",
+        "agenda": "Calendar",
+        "signOut": "Sign Out",
+        "newExpense": "New Expense",
+        "welcome": "Welcome, {name}",
+        "transaction": "Transaction",
+        "category": "Category",
+        "date": "Date",
+        "amount": "Amount",
+        "months": "Months",
+        "days": "Days",
+        "actions": "Actions"
+    },
+    "Status": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "overdue": "Overdue",
+        "stable": "Stable"
+    },
+    "Overview": {
+        "available": "Available",
+        "availableMoney": "Available Cash",
+        "safeToSpendDescription": "Safe to spend. Taxes and fixed costs deducted.",
+        "financialRunway": "Financial Runway",
+        "coveredUntil": "Covered until {date} with no new income.",
+        "target": "Target: {count} Months",
+        "runway": "Runway",
+        "viewDetails": "View Details",
+        "pendingInvoices": "Pending Invoices",
+        "quickActions": "Quick Actions",
+        "recentActivity": "Recent Activity",
+        "viewAll": "View all"
+    },
+    "Finance": {
+        "totalIncome": "Total Income (12M)",
+        "totalExpenses": "Total Expenses (12M)",
+        "income": "Income",
+        "expenses": "Expenses"
+    },
+    "Predictive": {
+        "title": "Predictive Insights",
+        "nextPayment": "Next Payment",
+        "cardSummary": "Card Summary {label}",
+        "paymentDue": "Due {date}",
+        "noUpcomingFull": "No upcoming card payments.",
+        "viewSummary": "View Summary",
+        "goToExpenses": "Go to Expenses",
+        "receivables": "Receivables",
+        "nextCollection": "Next Collection",
+        "allClear": "All clear! No pending invoices.",
+        "overdueAlert": "You have <bold>{count} overdue</bold> invoices!",
+        "viewInvoices": "View Invoices",
+        "manageOverdue": "Manage Overdue",
+        "events": "Events",
+        "next": "Next: <highlight>{title}</highlight> ({date})",
+        "freeAgenda": "Agenda clear this week.",
+        "agendaPrompt": "Want to schedule a meeting or task?",
+        "viewAgenda": "View Agenda",
+        "scheduleEvent": "Schedule Event"
+    },
+    "QuickActions": {
+        "super": "Groceries",
+        "uber": "Uber/Ride",
+        "outing": "Dining Out",
+        "coffee": "Coffee",
+        "pharmacy": "Pharmacy",
+        "services": "Utilities"
+    },
+    "Activity": {
+        "paymentReceived": "Payment received",
+        "billPaid": "Bill paid",
+        "subscription": "Subscription",
+        "expense": "Expense",
+        "today": "Today",
+        "yesterday": "Yesterday"
+    }
+}

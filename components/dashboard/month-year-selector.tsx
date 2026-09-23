@@ -10,7 +10,7 @@ const monthNames = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-export function DateNavigator() {
+export function DateNavigator({ className }: { className?: string } = {}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -49,40 +49,41 @@ export function DateNavigator() {
   const displayDate = `${monthNames[month - 1]} ${year}`;
 
   return (
-    <Card>
-      <CardContent className='flex items-center'>
-
-      <Button 
-        variant="ghost" 
-        size="icon" 
+    <div className={`flex items-center gap-1 p-1 bg-background border border-input rounded-md shadow-sm text-foreground ${className || ''}`.trim()}>
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => handleNavigate('prev')}
         aria-label="Mes anterior"
+        className="h-7 w-7 hover:bg-muted"
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </Button>
-      
-      <span className="w-32 text-center font-semibold text-sm">
+
+      <span className="w-32 text-center font-medium text-sm text-foreground">
         {displayDate}
       </span>
-      
-      <Button 
-        variant="ghost" 
-        size="icon" 
+
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => handleNavigate('next')}
         aria-label="Mes siguiente"
+        className="h-7 w-7 hover:bg-muted"
       >
         <ChevronRightIcon className="h-4 w-4" />
       </Button>
 
-      <Button 
-        variant="outline"
+      <div className="h-4 w-[1px] bg-border mx-1" />
+
+      <Button
+        variant="ghost"
         size="sm"
-        className="ml-2"
+        className="h-7 px-2 text-xs font-medium hover:bg-muted"
         onClick={() => handleNavigate('today')}
       >
         Hoy
       </Button>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

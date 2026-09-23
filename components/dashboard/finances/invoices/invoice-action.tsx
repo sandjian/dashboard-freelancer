@@ -30,24 +30,24 @@ export function InvoiceActions({ invoiceId }: { invoiceId: string }) {
     <AlertDialog>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
+          <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer text-neutral-500">
             <span className="sr-only">Abrir menú</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-white">
+        <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          
+          <DropdownMenuSeparator className="bg-border" />
+
           {/* 2. Nuevo ítem "Ver Detalles" */}
-          <DropdownMenuItem asChild className='hover:bg-neutral-100/40 transition-colors duration-200 cursor-pointer'>
+          <DropdownMenuItem asChild className='hover:bg-muted focus:bg-muted transition-colors duration-200 cursor-pointer'>
             <Link href={`/dashboard/finances/invoices/${invoiceId}/details`}>
               <Eye className="mr-2 h-4 w-4" />
               Ver
             </Link>
           </DropdownMenuItem>
-          
-          <DropdownMenuItem asChild className='hover:bg-neutral-100/40 transition-colors duration-200 cursor-pointer'>
+
+          <DropdownMenuItem asChild className='hover:bg-muted focus:bg-muted transition-colors duration-200 cursor-pointer'>
             <Link href={`/dashboard/finances/invoices/${invoiceId}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
@@ -56,7 +56,7 @@ export function InvoiceActions({ invoiceId }: { invoiceId: string }) {
 
           <AlertDialogTrigger asChild>
             <DropdownMenuItem
-              className="text-danger focus:text-danger hover:bg-neutral-100/40 transition-colors duration-200 cursor-pointer "
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 hover:bg-destructive/10 transition-colors duration-200 cursor-pointer"
               onSelect={(e) => e.preventDefault()}
             >
               <Trash2 className="mr-2 h-4 w-4 text-danger" />

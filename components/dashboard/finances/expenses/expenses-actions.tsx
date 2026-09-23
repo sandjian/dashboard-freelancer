@@ -28,40 +28,40 @@ export function ExpenseActions({ expenseId }: { expenseId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
+        <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
           <span className="sr-only">Abrir menú</span>
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <Link href={`/dashboard/finances/expenses/${expenseId}/edit`}>
-          <DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-border" />
+        <DropdownMenuItem asChild className="hover:bg-muted focus:bg-muted cursor-pointer">
+          <Link href={`/dashboard/finances/expenses/${expenseId}/edit`}>
             Editar
-          </DropdownMenuItem>
-        </Link>
+          </Link>
+        </DropdownMenuItem>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <DropdownMenuItem
-              className="text-red-500"
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 hover:bg-destructive/10 cursor-pointer"
               onSelect={(e) => e.preventDefault()}
             >
               Eliminar
             </DropdownMenuItem>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="bg-card border-border text-foreground">
             <AlertDialogHeader>
               <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogDescription className="text-muted-foreground">
                 Esta acción no se puede deshacer. Esto eliminará permanentemente este gasto.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel className="border-border bg-transparent hover:bg-muted text-foreground">Cancelar</AlertDialogCancel>
               <form action={deleteExpense}>
                 <input type="hidden" name="id" value={expenseId} />
-                <AlertDialogAction type="submit">Continuar</AlertDialogAction>
+                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-white" type="submit">Continuar</AlertDialogAction>
               </form>
             </AlertDialogFooter>
           </AlertDialogContent>

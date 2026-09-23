@@ -5,47 +5,65 @@ import {
   UserGroupIcon,
   HomeIcon,
   DocumentDuplicateIcon,
+  BanknotesIcon,
+  CreditCardIcon,
+  BuildingLibraryIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import clsx from 'clsx';
-
-// Map of links to display in the side navigation.
-// DePendiente on the size of the application, this would be stored in a database.
-const links = [
-  { name: 'Home', href: '/dashboard', icon: HomeIcon },
-  { name: 'Ingresos', href: '/dashboard/finances/invoices', icon: DocumentDuplicateIcon,},
-  { name: 'Gastos', href: '/dashboard/finances/expenses', icon: UserGroupIcon },
-  { name: 'Banking', href: '/dashboard/finances/cards', icon: UserGroupIcon },
-  { name: 'Clientes', href: '/dashboard/finances/clients', icon: UserGroupIcon },
-  { name: 'Agenda', href: '/dashboard/calendary', icon: UserGroupIcon },
-  { name: 'Lista de tareas', href: '/dashboard/to-do-list', icon: UserGroupIcon },
-];
+import { useTranslations } from 'next-intl';
 
 export default function NavLinks() {
+  const t = useTranslations('Common');
   const pathname = usePathname();
-  const searchParams = useSearchParams(); // Hook para leer la URL
+  const searchParams = useSearchParams();
 
-  // Obtenemos los parámetros de fecha actuales
   const currentParams = new URLSearchParams(searchParams);
   const year = currentParams.get('year');
   const month = currentParams.get('month');
 
-  // Creamos el string de la consulta que se añadirá a los enlaces
   const queryString = (year && month) ? `?year=${year}&month=${month}` : '';
+
+  const links = [
+    { name: t('dashboard'), href: '/dashboard', icon: HomeIcon },
+    { name: t('invoices'), href: '/dashboard/finances/invoices', icon: DocumentDuplicateIcon },
+    { name: t('expenses'), href: '/dashboard/finances/expenses', icon: BanknotesIcon },
+    { name: t('cards'), href: '/dashboard/finances/cards', icon: CreditCardIcon },
+    { name: t('banking'), href: '/dashboard/finances/banks', icon: BuildingLibraryIcon },
+    { name: t('clients'), href: '/dashboard/finances/clients', icon: UserGroupIcon },
+    { name: t('agenda'), href: '/dashboard/agenda', icon: CalendarIcon },
+  ];
 
   return (
     <>
       {links.map((link) => {
         const LinkIcon = link.icon;
+        // Basic active check (might need improvement for locale prefixes if usePathname includes it)
+        // usage of next/navigation usePathname in localized app usually includes locale: /es/dashboard
+        // links.href is /dashboard.
+        // We really should use `usePathname` from `next-intl/navigation` or just check inclusion.
+        // Actually, let's strictly check content.
+
+        // However, next-intl's Link handles the href prop by adding locale.
+        // But for active state, we compare the current pathname.
+
+        // Cleanest way:
+        // pathname might be "/es/dashboard/..."
+        // link.href is "/dashboard"
+
+        // Let's use a simpler check for now: 
+        const isActive = pathname.endsWith(link.href) || (link.href !== '/dashboard' && pathname.includes(link.href));
+
         return (
-          // 👇 CADA ENLACE AHORA LLEVA EL MES Y AÑO EN SU HREF 👇
           <Link
-            key={link.name}
+            key={link.href}
             href={`${link.href}${queryString}`}
             className={clsx(
-              'flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3',
+              'flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium transition-all duration-200 md:flex-none md:justify-start md:p-2 md:px-3',
               {
-                'bg-sky-100 text-blue-600': pathname === link.href,
+                'bg-sidebar-accent text-sidebar-primary dark:text-white shadow-sm': isActive,
+                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground': !isActive,
               },
             )}
           >

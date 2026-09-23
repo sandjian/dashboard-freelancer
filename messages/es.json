@@ -1,0 +1,85 @@
+{
+    "Common": {
+        "dashboard": "Dashboard",
+        "invoices": "Facturas",
+        "expenses": "Gastos",
+        "cards": "Tarjetas",
+        "banking": "Bancos",
+        "clients": "Clientes",
+        "agenda": "Agenda",
+        "signOut": "Cerrar Sesión",
+        "newExpense": "Nuevo Gasto",
+        "welcome": "Bienvenido, {name}",
+        "transaction": "Transacción",
+        "category": "Categoría",
+        "date": "Fecha",
+        "amount": "Monto",
+        "months": "Meses",
+        "days": "Días",
+        "actions": "Acciones",
+        "viewAllActivity": "Ver toda la actividad"
+    },
+    "Status": {
+        "paid": "Pagada",
+        "pending": "Pendiente",
+        "overdue": "Vencida",
+        "stable": "Estable"
+    },
+    "Overview": {
+        "available": "Disponible",
+        "availableMoney": "Dinero Disponible",
+        "safeToSpendDescription": "Seguro para gastar. Impuestos y costos fijos deducidos.",
+        "financialRunway": "Runway Financiero",
+        "coveredUntil": "Cubierto hasta el {date} sin nuevos ingresos.",
+        "target": "Meta: {count} Meses",
+        "runway": "Runway",
+        "viewDetails": "Ver Detalle",
+        "pendingInvoices": "Facturas Pendientes",
+        "quickActions": "Acciones Rápidas",
+        "recentActivity": "Actividad Reciente",
+        "viewAll": "Ver todo"
+    },
+    "Finance": {
+        "totalIncome": "Ingresos Totales (12M)",
+        "totalExpenses": "Gastos Totales (12M)",
+        "income": "Ingresos",
+        "expenses": "Gastos"
+    },
+    "Predictive": {
+        "title": "Predictive Insights",
+        "nextPayment": "Próximo Pago",
+        "cardSummary": "Resumen Tarjeta {label}",
+        "paymentDue": "Vence {date}",
+        "noUpcomingFull": "No hay vencimientos de tarjeta próximos.",
+        "viewSummary": "Ver Resumen",
+        "goToExpenses": "Ir a Gastos",
+        "receivables": "Por Cobrar",
+        "nextCollection": "Próximo Cobro",
+        "allClear": "¡Al día! No tienes facturas pendientes.",
+        "overdueAlert": "¡Tienes <bold>{count} facturas</bold> vencidas!",
+        "viewInvoices": "Ver Facturas",
+        "manageOverdue": "Gestionar Vencidas",
+        "events": "Eventos",
+        "next": "Prox: <highlight>{title}</highlight> ({date})",
+        "freeAgenda": "Agenda libre esta semana.",
+        "agendaPrompt": "¿Quieres agendar una reunión o tarea?",
+        "viewAgenda": "Ver Agenda",
+        "scheduleEvent": "Agendar Evento"
+    },
+    "QuickActions": {
+        "super": "Super",
+        "uber": "Uber",
+        "outing": "Salida",
+        "coffee": "Café",
+        "pharmacy": "Farmacia",
+        "services": "Servicios"
+    },
+    "Activity": {
+        "paymentReceived": "Pago recibido",
+        "billPaid": "Factura pagada",
+        "subscription": "Suscripción",
+        "expense": "Gasto",
+        "today": "Hoy",
+        "yesterday": "Ayer"
+    }
+}

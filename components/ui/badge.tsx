@@ -13,17 +13,17 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+          "font-normal text-xs bg-primary/10 text-primary border-primary/20 hover:bg-primary/20",
         danger:
-          "border-danger text-danger [a&]:hover:bg-secondary/90",
-        // La variante 'secondary' tenía colores de 'destructive', la ajusté a un color más neutral.
-        // Si la intención era que fuera roja, puedes volver a ponerle los colores de 'destructive'.
+          "font-normal text-xs bg-transparent text-destructive border-destructive hover:bg-destructive/10",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/80",
+          "font-normal text-xs bg-transparent text-muted-foreground border-border hover:bg-secondary/50",
         warning:
-          "text-warning border-warning [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        success: 
-          "border-success text-success",
+          "font-normal text-xs bg-transparent text-warning border-warning hover:bg-warning/10",
+        success:
+          "font-normal text-xs bg-gradient-to-r from-teal-500/15 via-teal-900/30 to-black/40 text-teal-400 dark:text-teal-300 border-teal-500/30 shadow-[0_0_10px_rgba(20,184,166,0.15)]",
+        outline:
+          "font-normal text-xs bg-black/10 text-slate-200 border-cyan-700 text-foreground",
       },
     },
     defaultVariants: {
@@ -34,11 +34,12 @@ const badgeVariants = cva(
 
 // 2. Crear un mapa para asociar variantes con íconos
 const variantIconMap: Record<NonNullable<VariantProps<typeof badgeVariants>["variant"]>, React.ElementType | null> = {
-    warning: Clock,
-    danger: XCircle,
-    success: CheckCircle,
-    default: null, // Sin ícono para 'default'
-    secondary: null, // Sin ícono para 'secondary'
+  warning: Clock,
+  danger: XCircle,
+  success: CheckCircle,
+  default: null, // Sin ícono para 'default'
+  secondary: null, // Sin ícono para 'secondary'
+  outline: null,
 }
 
 
@@ -51,7 +52,7 @@ function Badge({
 }: React.ComponentProps<"span"> &
   VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
   const Comp = asChild ? Slot : "span"
-  
+
   // 3. Obtener el componente del ícono desde el mapa
   const Icon = variant ? variantIconMap[variant] : null
 

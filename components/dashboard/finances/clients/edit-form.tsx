@@ -18,9 +18,9 @@ export function EditClientForm({
    client: {
     id: string;
     name: string;
-    brand: string
-    email?: string | null; // Añadir null aquí
-    phone?: string | null; // Añadir null aquí
+    brand?: string | null;
+    email?: string | null;
+    phone?: string | null;
   };
   onSuccess?: () => void;
 }) {
@@ -50,7 +50,7 @@ export function EditClientForm({
             <Input
               id="brand"
               name="brand"
-              defaultValue={client.brand}
+              defaultValue={client.brand ?? ''}
               className="py-2 px-3 bg-neutral-200/80 border border-neutral-300"
             />
             {state.errors?.brand && <p className="mt-1 text-xs text-danger">{state.errors.brand[0]}</p>}

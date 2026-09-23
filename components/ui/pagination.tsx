@@ -17,12 +17,12 @@ export default function Pagination({ totalPages }: { totalPages: number }) {
   };
 
   return (
-    <div className="flex items-center justify-end gap-4 w-full py-3 px-2">
-      <div className="text-xs text-muted-foreground">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full py-2 px-2">
+      <div className="text-xs text-muted-foreground order-2 sm:order-1 font-mono">
         Página {currentPage} de {totalPages}
       </div>
-      
-      <div className="flex gap-1">
+
+      <div className="flex gap-1 order-1 sm:order-2">
         <PaginationArrow
           direction="left"
           href={createPageURL(currentPage - 1)}
@@ -49,10 +49,10 @@ function PaginationArrow({
   isDisabled?: boolean;
 }) {
   const className = clsx(
-    'flex h-8 w-8 items-center justify-center rounded-md',
+    'flex h-8 w-8 items-center justify-center rounded-md border border-transparent',
     {
-      'pointer-events-none text-gray-300': isDisabled,
-      'hover:bg-gray-100': !isDisabled,
+      'pointer-events-none text-muted-foreground/50': isDisabled,
+      'hover:bg-muted hover:text-foreground text-muted-foreground': !isDisabled,
     },
   );
 
@@ -66,8 +66,8 @@ function PaginationArrow({
   return isDisabled ? (
     <div className={className}>{icon}</div>
   ) : (
-    <Link 
-      className={className} 
+    <Link
+      className={className}
       href={href}
       scroll={false}
       aria-label={direction === 'left' ? 'Página anterior' : 'Página siguiente'}

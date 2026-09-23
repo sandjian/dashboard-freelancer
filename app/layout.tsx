@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Jura, Antic_Slab, Kode_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fontSans = Jura({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontSerif = Antic_Slab({
+  variable: "--font-serif",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const fontMono = Kode_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -25,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} h-screen antialiased`}
+        className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} min-h-screen antialiased font-sans`}
       >
         {children}
       </body>

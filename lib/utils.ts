@@ -56,3 +56,60 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+/**
+ * Calcula la fecha de vencimiento y cierre basada en la fecha de la transacción
+ * y los parámetros de la tarjeta.
+ */
+export function calculateCardDates(
+  transactionDate: Date,
+  closingDay: number,
+  dueDay: number
+) {
+  // 1. Determinar la fecha de cierre para el mes de la transacción
+  const closeDateThisMonth = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), closingDay);
+
+  let statementMonth = transactionDate.getMonth();
+  let statementYear = transactionDate.getFullYear();
+
+  // Si la transacción fue DESPUÉS del cierre, entra en el siguiente resumen
+  if (transactionDate > closeDateThisMonth) {
+    statementMonth++;
+    if (statementMonth > 11) {
+      statementMonth = 0;
+      statementYear++;
+    }
+  }
+
+  // 2. Calcular la fecha de vencimiento (pago)
+  // Generalmente es en el mes SIGUIENTE al del resumen administrativo
+  // Ejemplo: Cierra 25 Ene (incluye compras hasta 25 Ene). Vence 5 Feb.
+  // Ejemplo: Cierra 25 Ene. Compro 26 Ene. Entra en Cierre 25 Feb. Vence 5 Marzo.
+
+  // Si dueDay < closingDay, asumo que vence al mes siguiente del cierre.
+  // Si close=25, due=5. Cierre Ener -> Vencimiento Feb.
+
+  let dueMonth = statementMonth + 1;
+  let dueYear = statementYear;
+
+  if (dueMonth > 11) {
+    dueMonth = 0;
+    dueYear++;
+  }
+
+  const dueDate = new Date(dueYear, dueMonth, dueDay);
+
+  return {
+    statementMonth, // El mes "administrativo" del resumen (0-indexed)
+    statementYear,
+    dueDate
+  };
+}
+
+export function formatDate(date: Date | string) {
+  const d = new Date(date);
+  return d.toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "short",
+  });
+}
