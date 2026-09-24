@@ -21,3 +21,16 @@ export async function authenticate(
         throw error;
     }
 }
+
+export async function loginWithGoogle() {
+    await signIn('google', { redirectTo: '/dashboard' });
+}
+
+export async function loginWithDemo() {
+    await signIn('credentials', {
+        email: 'demo@avalon.com',
+        password: 'demo1234',
+        redirectTo: '/dashboard',
+    });
+}
+

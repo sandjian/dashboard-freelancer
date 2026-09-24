@@ -1,8 +1,10 @@
+import { requireUser } from '@/lib/auth-guard';
 import { fetchClientById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { EditClientForm } from '@/components/dashboard/finances/clients/edit-form';
 
 export default async function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireUser();
   const { id } = await params;
   console.log(`[EditClientPage] Iniciando carga para el ID: ${id}`);
   const client = await fetchClientById(id);

@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import { Suspense } from "react";
 import {
   fetchDashboardData,
@@ -27,6 +28,7 @@ export default async function Page({
 }: {
   searchParams?: Promise<{ year?: string; month?: string }>;
 }) {
+  const user = await requireUser();
   const resolvedParams = await searchParams;
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -60,7 +62,7 @@ export default async function Page({
   const runwayDecimal = (dashboardData.metrics.runway).toFixed(1);
 
   return (
-    <div className="p-4 sm:p-6 w-full max-w-[1600px] m-auto space-y-8 min-h-screen text-foreground">
+    <div className="w-full max-w-[1600px] mx-auto space-y-6 sm:space-y-8 min-h-screen text-foreground">
       {/* 1. Hero Header & Quick Registration Actions */}
       <DashboardHeroHeader
         vendors={vendors}
@@ -70,7 +72,7 @@ export default async function Page({
       />
 
       {/* 2. Top KPIs: 4 Compact TranslucentImpactCards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {/* KPI 1: Liquidez Disponible */}
         <TranslucentImpactCard
           title="Liquidez Disponible"
@@ -113,9 +115,9 @@ export default async function Page({
       </div>
 
       {/* 3. Main Operational Layout (68% / 32%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* Columna Principal (~68%): Gráfico de Flujo de Caja + Actividad Reciente */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="xl:col-span-8 space-y-6 sm:space-y-8">
           <UnifiedCashFlowChart
             data={dashboardData.chartData}
             baseline={dashboardData.metrics.burnRate}
@@ -127,7 +129,7 @@ export default async function Page({
         </div>
 
         {/* Columna Lateral (~32%): Panel de Foco Operativo */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="xl:col-span-4 space-y-6">
           <OperationalFocusPanel
             todayEvents={todayEvents}
             upcomingDues={upcomingDues}

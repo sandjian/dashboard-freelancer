@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import { fetchInvoiceById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import InvoiceDetails from '@/components/dashboard/finances/invoices/invoice-detail';
@@ -8,6 +9,7 @@ export default async function InvoiceDetailsPage({
 }: { 
   params: Promise<{ id: string }> 
 }) {
+  const user = await requireUser();
   const { id } = await params;
   const invoice = await fetchInvoiceById(id);
 

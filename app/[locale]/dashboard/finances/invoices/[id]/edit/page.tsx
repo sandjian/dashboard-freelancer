@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import { EditInvoiceForm } from '@/components/dashboard/finances/invoices/edit-form';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { fetchInvoiceById, fetchClients } from '@/lib/data';
@@ -9,6 +10,7 @@ export default async function EditInvoicePage({
 }: { 
   params: Promise<{ id: string }> 
 }) {
+  const user = await requireUser();
   const { id } = await params;
 
   // Buscamos la factura y la lista de clientes en paralelo

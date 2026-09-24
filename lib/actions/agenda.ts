@@ -2,12 +2,14 @@
 
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { CalendarEventSchema, CalendarEventFormState } from '@/lib/definitions';
+import { requireUser } from '@/lib/auth-guard';
 
 const CreateEvent = CalendarEventSchema.omit({ id: true });
 
 export async function createEvent(prevState: CalendarEventFormState | null | undefined, formData: FormData) {
+    const user = await requireUser();
+
     const validatedFields = CreateEvent.safeParse({
         title: formData.get('title'),
         description: formData.get('description'),
@@ -23,21 +25,20 @@ export async function createEvent(prevState: CalendarEventFormState | null | und
     if (!validatedFields.success) {
         return {
             errors: validatedFields.error.flatten().fieldErrors,
-            message: 'Missing Fields. Failed to Create Event.',
+            message: 'Campos incompletos. No se pudo crear el evento.',
         };
     }
 
     const { title, description, start_time, end_time, type, priority, is_all_day, related_client_id, related_invoice_id } = validatedFields.data;
-    const user_id = '410544b2-4001-4271-9855-fec4b6a6442a'; // Hardcoded for now based on previous context
 
     try {
         await sql`
       INSERT INTO calendar_events (user_id, title, description, start_time, end_time, type, priority, is_all_day, status, related_client_id, related_invoice_id)
-      VALUES (${user_id}, ${title}, ${description}, ${start_time.toISOString()}, ${end_time.toISOString()}, ${type}, ${priority || 'medium'}, ${is_all_day}, 'pending', ${related_client_id}, ${related_invoice_id})
+      VALUES (${user.id}, ${title}, ${description}, ${start_time.toISOString()}, ${end_time.toISOString()}, ${type}, ${priority || 'medium'}, ${is_all_day}, 'pending', ${related_client_id}, ${related_invoice_id})
     `;
     } catch (error) {
         return {
-            message: 'Database Error: Failed to Create Event.',
+            message: 'Error de base de datos: No se pudo crear el evento.',
         };
     }
 
@@ -47,8 +48,9 @@ export async function createEvent(prevState: CalendarEventFormState | null | und
 }
 
 export async function deleteEvent(id: string) {
+    const user = await requireUser();
     try {
-        await sql`DELETE FROM calendar_events WHERE id = ${id}`;
+        await sql`DELETE FROM calendar_events WHERE id = ${id} AND user_id = ${user.id}`;
         revalidatePath('/dashboard/agenda');
         revalidatePath('/dashboard');
         return { message: 'Deleted Event.' };
@@ -58,11 +60,12 @@ export async function deleteEvent(id: string) {
 }
 
 export async function toggleTaskStatus(id: string, status: 'pending' | 'completed') {
+    const user = await requireUser();
     try {
         await sql`
             UPDATE calendar_events 
             SET status = ${status}
-            WHERE id = ${id}
+            WHERE id = ${id} AND user_id = ${user.id}
         `;
         revalidatePath('/dashboard/agenda');
         revalidatePath('/dashboard');

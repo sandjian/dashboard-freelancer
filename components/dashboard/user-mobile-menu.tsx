@@ -40,7 +40,7 @@ export function UserMobileMenu({ user }: UserMobileMenuProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 md:hidden">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 xl:hidden">
                     <Avatar className="h-9 w-9 border border-border">
                         <AvatarImage src={user?.image || "https://github.com/shadcn.png"} alt={user?.name || "@user"} />
                         <AvatarFallback>{userInitials}</AvatarFallback>

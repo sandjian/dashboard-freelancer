@@ -1,4 +1,5 @@
 import { sql } from '@vercel/postgres';
+import { resolveUserId } from './auth-guard';
 import { Card, Category, Client, ClientWithStats, Expense, ExpenseWithVendor, ExpenseTemplateWithDetails, Invoice, InvoiceWithClient, Vendor, DashboardPredictiveStatus, CardWithStatement, CalendarEvent } from './definitions';
 
 const ITEMS_PER_PAGE = 6;
@@ -6,10 +7,11 @@ const ITEMS_PER_PAGE_EXPENSES = 5;
 
 // --- INVOICE FUNCTIONS ---
 
-export async function fetchClients(): Promise<Client[]> {
+export async function fetchClients(userId?: string): Promise<Client[]> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql<Client>`
-      SELECT id, name, email, brand, phone, image_url FROM clients ORDER BY name ASC
+      SELECT id, name, email, brand, phone, image_url FROM clients WHERE user_id = ${uid} ORDER BY name ASC
     `;
     return data.rows;
   } catch (err) {
@@ -18,9 +20,10 @@ export async function fetchClients(): Promise<Client[]> {
   }
 }
 
-export async function fetchClientById(id: string): Promise<Client | undefined> {
+export async function fetchClientById(id: string, userId?: string): Promise<Client | undefined> {
+  const uid = await resolveUserId(userId);
   try {
-    const data = await sql<Client>`SELECT id, name, email, brand, phone, image_url FROM clients WHERE id = ${id}`;
+    const data = await sql<Client>`SELECT id, name, email, brand, phone, image_url FROM clients WHERE id = ${id} AND user_id = ${uid}`;
     return data.rows[0];
   } catch (error) {
     console.error('Database Error:', error);
@@ -28,9 +31,10 @@ export async function fetchClientById(id: string): Promise<Client | undefined> {
   }
 }
 
-export async function fetchNextInvoiceNumber(): Promise<number> {
+export async function fetchNextInvoiceNumber(userId?: string): Promise<number> {
+  const uid = await resolveUserId(userId);
   try {
-    const result = await sql`SELECT MAX(invoice_number) as max FROM invoices;`;
+    const result = await sql`SELECT MAX(invoice_number) as max FROM invoices WHERE user_id = ${uid};`;
     return (result.rows[0].max ?? 0) + 1;
   } catch (error) {
     console.error('Database Error:', error);
@@ -43,18 +47,21 @@ export async function fetchFilteredInvoices(
   currentPage: number,
   year: number,
   month: number,
-  status: string
+  status: string,
+  userId?: string
 ): Promise<InvoiceWithClient[]> {
+  const uid = await resolveUserId(userId);
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
   const searchQuery = `%${query}%`;
 
   try {
     const whereConditions = [
-      `EXTRACT(YEAR FROM invoices.issue_date) = $1`,
-      `EXTRACT(MONTH FROM invoices.issue_date) = $2`,
-      `(clients.name ILIKE $3 OR clients.email ILIKE $3 OR clients.brand ILIKE $3)`
+      `invoices.user_id = $1`,
+      `EXTRACT(YEAR FROM invoices.issue_date) = $2`,
+      `EXTRACT(MONTH FROM invoices.issue_date) = $3`,
+      `(clients.name ILIKE $4 OR clients.email ILIKE $4 OR clients.brand ILIKE $4)`
     ];
-    const params: unknown[] = [year, month, searchQuery];
+    const params: unknown[] = [uid, year, month, searchQuery];
 
     // Filtro de estado contemplando vencimiento dinámico
     if (status) {
@@ -118,17 +125,20 @@ export async function fetchInvoicesPages(
   query: string,
   year: number,
   month: number,
-  status: string
+  status: string,
+  userId?: string
 ) {
+  const uid = await resolveUserId(userId);
   const searchQuery = `%${query}%`;
 
   try {
     const whereConditions = [
-      `EXTRACT(YEAR FROM invoices.issue_date) = $1`,
-      `EXTRACT(MONTH FROM invoices.issue_date) = $2`,
-      `(clients.name ILIKE $3 OR clients.email ILIKE $3 OR clients.brand ILIKE $3)`
+      `invoices.user_id = $1`,
+      `EXTRACT(YEAR FROM invoices.issue_date) = $2`,
+      `EXTRACT(MONTH FROM invoices.issue_date) = $3`,
+      `(clients.name ILIKE $4 OR clients.email ILIKE $4 OR clients.brand ILIKE $4)`
     ];
-    const params: unknown[] = [year, month, searchQuery];
+    const params: unknown[] = [uid, year, month, searchQuery];
 
     if (status) {
       if (status.toLowerCase() === 'vencido') {
@@ -156,15 +166,21 @@ export async function fetchInvoicesPages(
   }
 }
 
-export async function fetchInvoiceById(id: string) {
+export async function fetchInvoiceById(id: string, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const invoiceData = await sql`
       SELECT invoices.*, clients.name, clients.email
       FROM invoices
       JOIN clients ON invoices.client_id = clients.id
-      WHERE invoices.id = ${id};
+      WHERE invoices.id = ${id} AND invoices.user_id = ${uid};
     `;
-    const itemsData = await sql`SELECT * FROM line_items WHERE invoice_id = ${id}`;
+    const itemsData = await sql`
+      SELECT li.* 
+      FROM line_items li
+      JOIN invoices inv ON li.invoice_id = inv.id
+      WHERE li.invoice_id = ${id} AND inv.user_id = ${uid}
+    `;
 
     if (invoiceData.rows.length === 0) return null;
 
@@ -201,7 +217,8 @@ export async function fetchInvoiceById(id: string) {
   }
 }
 
-export async function fetchGlobalOverdueStats(): Promise<{ amount: number; count: number }> {
+export async function fetchGlobalOverdueStats(userId?: string): Promise<{ amount: number; count: number }> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
         SELECT COALESCE(SUM(amount), 0) as total_amount, COUNT(*) as total_count 
@@ -228,7 +245,8 @@ export async function fetchVendors(): Promise<Vendor[]> {
   }
 }
 
-export async function fetchInvoiceStats(year: number, month: number) {
+export async function fetchInvoiceStats(year: number, month: number, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT
@@ -268,7 +286,8 @@ export async function fetchInvoiceStats(year: number, month: number) {
   }
 }
 
-export async function fetchClientsWithStats(): Promise<ClientWithStats[]> {
+export async function fetchClientsWithStats(userId?: string): Promise<ClientWithStats[]> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
         SELECT 
@@ -315,7 +334,8 @@ export async function fetchClientsWithStats(): Promise<ClientWithStats[]> {
   }
 }
 
-export async function fetchClientDetailsById(id: string) {
+export async function fetchClientDetailsById(id: string, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const [clientData, invoicesData] = await Promise.all([
       sql`
@@ -391,7 +411,8 @@ export async function fetchClientDetailsById(id: string) {
   }
 }
 
-export async function fetchClientRevenueHistory(clientId: string, months: number = 12) {
+export async function fetchClientRevenueHistory(clientId: string, months: number = 12, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       WITH months AS (
@@ -421,7 +442,8 @@ export async function fetchClientRevenueHistory(clientId: string, months: number
   }
 }
 
-export async function fetchClientCalendarEvents(clientId: string): Promise<CalendarEvent[]> {
+export async function fetchClientCalendarEvents(clientId: string, userId?: string): Promise<CalendarEvent[]> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql<CalendarEvent>`
       SELECT 
@@ -477,9 +499,10 @@ export interface ClientsPortfolioMetrics {
   }[];
 }
 
-export async function fetchClientsPortfolioMetrics(): Promise<ClientsPortfolioMetrics> {
+export async function fetchClientsPortfolioMetrics(userId?: string): Promise<ClientsPortfolioMetrics> {
+  const uid = await resolveUserId(userId);
   try {
-    const clients = await fetchClientsWithStats();
+    const clients = await fetchClientsWithStats(uid);
 
     const totalClients = clients.length;
     // Un cliente se considera activo si tiene facturas emitidas o actividad registrada
@@ -560,7 +583,8 @@ export async function fetchClientsPortfolioMetrics(): Promise<ClientsPortfolioMe
 
 // --- INVOICES ANALYTICS ---
 
-export async function fetchMonthlyIncomeHistory(months: number = 12) {
+export async function fetchMonthlyIncomeHistory(months: number = 12, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       WITH months AS (
@@ -575,7 +599,7 @@ export async function fetchMonthlyIncomeHistory(months: number = 12) {
         EXTRACT(MONTH FROM m.month_start) as month_num,
         COALESCE(SUM(i.amount), 0) / 100 as value
       FROM months m
-      LEFT JOIN invoices i ON date_trunc('month', i.issue_date) = m.month_start AND i.status = 'facturado'
+      LEFT JOIN invoices i ON date_trunc('month', i.issue_date) = m.month_start AND i.status = 'facturado' AND i.user_id = 
       GROUP BY m.month_start
       ORDER BY m.month_start ASC
     `;
@@ -589,7 +613,8 @@ export async function fetchMonthlyIncomeHistory(months: number = 12) {
   }
 }
 
-export async function fetchTopClients(year: number, month: number, limit: number = 5) {
+export async function fetchTopClients(year: number, month: number, limit: number = 5, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -612,7 +637,8 @@ export async function fetchTopClients(year: number, month: number, limit: number
 }
 
 // Fetches the most recent invoices (Created/Issued) regardless of status
-export async function fetchLastIssuedInvoices(limit: number = 5) {
+export async function fetchLastIssuedInvoices(limit: number = 5, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -653,9 +679,10 @@ export async function fetchExpenseCategories(): Promise<Category[]> {
   }
 }
 
-export async function fetchExpenseById(id: string): Promise<Expense | undefined> {
+export async function fetchExpenseById(id: string, userId?: string): Promise<Expense | undefined> {
+  const uid = await resolveUserId(userId);
   try {
-    const data = await sql`SELECT * FROM expenses WHERE id = ${id}`;
+    const data = await sql`SELECT * FROM expenses WHERE id =  AND user_id = ${id}`;
 
     if (data.rows.length === 0) return undefined;
 
@@ -682,9 +709,10 @@ export async function fetchExpenseById(id: string): Promise<Expense | undefined>
     throw new Error('Failed to fetch expense.');
   }
 }
-export async function fetchCards(): Promise<Card[]> {
+export async function fetchCards(userId?: string): Promise<Card[]> {
+  const uid = await resolveUserId(userId);
   try {
-    const data = await sql<Card>`SELECT * FROM cards ORDER BY name ASC`;
+    const data = await sql<Card>`SELECT * FROM cards WHERE user_id =  ORDER BY name ASC`;
     return data.rows;
   } catch (err) {
     console.error('Database Error:', err);
@@ -692,7 +720,8 @@ export async function fetchCards(): Promise<Card[]> {
   }
 }
 
-export async function fetchExpenseStats(year: number, month: number) {
+export async function fetchExpenseStats(year: number, month: number, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const period = `${year}-${String(month).padStart(2, '0')}`;
 
@@ -730,7 +759,8 @@ export async function fetchExpenseStats(year: number, month: number) {
   }
 }
 
-export async function fetchExpenseCategoryStats(year: number, month: number) {
+export async function fetchExpenseCategoryStats(year: number, month: number, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const period = `${year}-${String(month).padStart(2, '0')}`;
 
@@ -757,7 +787,8 @@ export async function fetchExpenseCategoryStats(year: number, month: number) {
   }
 }
 
-export async function fetchMonthlyExpenseHistory(months: number = 6) {
+export async function fetchMonthlyExpenseHistory(months: number = 6, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     // Genera la serie temporal consultando únicamente la tabla expenses
     const data = await sql`
@@ -795,7 +826,8 @@ export async function fetchMonthlyExpenseHistory(months: number = 6) {
   }
 }
 
-export async function fetchOverdueInvoices(limit: number = 6) {
+export async function fetchOverdueInvoices(limit: number = 6, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -808,7 +840,7 @@ export async function fetchOverdueInvoices(limit: number = 6) {
         i.status
       FROM invoices i
       JOIN clients c ON i.client_id = c.id
-      WHERE (i.status = 'vencido') OR (i.status = 'pendiente' AND i.due_date < NOW())
+      WHERE i.user_id =  AND ((i.status = 'vencido') OR (i.status = 'pendiente' AND i.due_date < NOW()))
       ORDER BY i.due_date ASC
       LIMIT ${limit}
     `;
@@ -833,8 +865,10 @@ export async function fetchExpensesPages(
   month: number,
   categoryId: string | null,
   status: string | null,
-  cardId: string | null = null
+  cardId: string | null = null,
+  userId?: string
 ) {
+  const uid = await resolveUserId(userId);
   const searchQuery = `%${query}%`;
   try {
     let whereClause = `
@@ -842,7 +876,7 @@ export async function fetchExpensesPages(
           AND EXTRACT(MONTH FROM expenses.date) = $2
           AND (expenses.concept ILIKE $3 OR v.name ILIKE $3 OR ec.name ILIKE $3)
       `;
-    const queryParams: unknown[] = [year, month, searchQuery];
+    const queryParams: unknown[] = [year, month, searchQuery, uid];
 
     if (categoryId && categoryId !== 'all') {
       queryParams.push(categoryId);
@@ -1066,7 +1100,8 @@ export async function fetchFilteredExpenses(
   }
 }
 
-export async function fetchCardPaymentsDueForMonth(year: number, month: number) {
+export async function fetchCardPaymentsDueForMonth(year: number, month: number, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
 SELECT
@@ -1089,7 +1124,8 @@ COUNT(*) as total_count,
   }
 }
 
-export async function fetchPendingRecurringExpensesCount(): Promise<number> {
+export async function fetchPendingRecurringExpensesCount(userId?: string): Promise<number> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT COUNT(*) as count 
@@ -1103,7 +1139,8 @@ export async function fetchPendingRecurringExpensesCount(): Promise<number> {
   }
 }
 
-export async function fetchDashboardData() {
+export async function fetchDashboardData(userId?: string) {
+  const uid = await resolveUserId(userId);
   const db = await sql.connect();
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
@@ -1123,9 +1160,9 @@ export async function fetchDashboardData() {
 
     // --- 2. Compromisos Inmediatos de Tarjetas (Pasivo Pendiente en ARS) ---
     const pendingStatementsResult = await db.query(`
-      SELECT COALESCE(SUM(total_amount), 0) as total 
+      SELECT COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as total 
       FROM card_statements 
-      WHERE status = 'pending'
+      WHERE status IN ('pending', 'partially_paid')
     `);
     const pendingCardDebt = Number(pendingStatementsResult.rows[0].total || 0) / 100;
 
@@ -1178,10 +1215,10 @@ export async function fetchDashboardData() {
     // A. Próximo Vencimiento de Resumen de Tarjeta
     let expenseStatus = null;
     const nextCardPayment = await db.query(`
-      SELECT cs.id as statement_id, cs.due_date, cs.total_amount, cs.card_id, c.name as card_name
+      SELECT cs.id as statement_id, cs.due_date, (cs.total_amount - COALESCE(cs.paid_amount, 0)) as remaining_amount, cs.card_id, c.name as card_name
       FROM card_statements cs
       JOIN cards c ON cs.card_id = c.id
-      WHERE cs.status = 'pending' AND cs.due_date >= CURRENT_DATE
+      WHERE cs.status IN ('pending', 'partially_paid') AND cs.due_date >= CURRENT_DATE
       ORDER BY cs.due_date ASC
       LIMIT 1
     `);
@@ -1194,7 +1231,7 @@ export async function fetchDashboardData() {
         cardName: row.card_name,
         cardId: row.card_id,
         date: new Date(row.due_date),
-        amount: Number(row.total_amount) / 100,
+        amount: Number(row.remaining_amount) / 100,
         label: `Resumen Tarjeta ${row.card_name}`,
       };
     } else {
@@ -1346,7 +1383,8 @@ export async function fetchDashboardData() {
   }
 }
 
-export async function fetchUpcomingRecurringExpenses(limit: number = 5): Promise<ExpenseTemplateWithDetails[]> {
+export async function fetchUpcomingRecurringExpenses(limit: number = 5, userId?: string): Promise<ExpenseTemplateWithDetails[]> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -1358,7 +1396,7 @@ export async function fetchUpcomingRecurringExpenses(limit: number = 5): Promise
       FROM expense_templates et
       LEFT JOIN vendors v ON et.vendor_id = v.id
       LEFT JOIN expense_categories ec ON et.category_id = ec.id
-      WHERE et.next_due_date > NOW() AND et.active = TRUE
+      WHERE et.user_id =  AND et.next_due_date > NOW() AND et.active = TRUE
       ORDER BY et.next_due_date ASC
       LIMIT ${limit}
     `;
@@ -1387,7 +1425,8 @@ export interface CardActivityItem {
   category_name?: string | null;
 }
 
-export async function fetchGlobalCardActivity(limit: number = 6) {
+export async function fetchGlobalCardActivity(limit: number = 6, userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -1421,7 +1460,8 @@ export async function fetchGlobalCardActivity(limit: number = 6) {
   }
 }
 
-export async function fetchCardSpendingDistribution(year: number, month: number) {
+export async function fetchCardSpendingDistribution(year: number, month: number, userId?: string) {
+  const uid = await resolveUserId(userId);
   const periodDate = `${year}-${String(month).padStart(2, '0')}-01`;
 
   try {
@@ -1434,7 +1474,7 @@ export async function fetchCardSpendingDistribution(year: number, month: number)
       JOIN card_statements cs 
         ON c.id = cs.card_id 
        AND cs.statement_month = ${periodDate}::date
-      WHERE cs.total_amount > 0
+      WHERE c.user_id =  AND cs.total_amount > 0
       ORDER BY value DESC
     `;
 
@@ -1450,7 +1490,8 @@ export async function fetchCardSpendingDistribution(year: number, month: number)
 }
 
 
-export async function fetchCardsWithMonthlyStatement(year: number, month: number): Promise<CardWithStatement[]> {
+export async function fetchCardsWithMonthlyStatement(year: number, month: number, userId?: string): Promise<CardWithStatement[]> {
+  const uid = await resolveUserId(userId);
   const periodDate = `${year}-${String(month).padStart(2, '0')}-01`;
 
   try {
@@ -1464,6 +1505,7 @@ export async function fetchCardsWithMonthlyStatement(year: number, month: number
         c.color,
         cs.id AS statement_id,
         cs.total_amount,
+        COALESCE(cs.paid_amount, 0) AS paid_amount,
         cs.due_date,
         cs.status AS statement_status
       FROM cards c
@@ -1483,8 +1525,9 @@ export async function fetchCardsWithMonthlyStatement(year: number, month: number
       statement: row.statement_id ? {
         id: row.statement_id,
         totalAmount: Number(row.total_amount),
+        paidAmount: Number(row.paid_amount || 0),
         dueDate: new Date(row.due_date),
-        status: row.statement_status as 'pending' | 'paid',
+        status: row.statement_status as 'pending' | 'partially_paid' | 'paid',
       } : null,
     }));
   } catch (error) {
@@ -1493,7 +1536,8 @@ export async function fetchCardsWithMonthlyStatement(year: number, month: number
   }
 }
 
-export async function fetchCardDetail(cardId: string, year: number, month: number) {
+export async function fetchCardDetail(cardId: string, year: number, month: number, userId?: string) {
+  const uid = await resolveUserId(userId);
   const periodDate = `${year}-${String(month).padStart(2, '0')}-01`;
 
   try {
@@ -1514,16 +1558,18 @@ export async function fetchCardDetail(cardId: string, year: number, month: numbe
     const currentStatement = currentStatementRes.rows[0] ? {
       id: Number(currentStatementRes.rows[0].id),
       totalAmount: Number(currentStatementRes.rows[0].total_amount),
+      paidAmount: Number(currentStatementRes.rows[0].paid_amount || 0),
       dueDate: new Date(currentStatementRes.rows[0].due_date),
-      status: currentStatementRes.rows[0].status as 'pending' | 'paid',
+      status: currentStatementRes.rows[0].status as 'pending' | 'partially_paid' | 'paid',
     } : null;
 
     const history = historyRes.rows.map(row => ({
       id: Number(row.id),
       statementMonth: new Date(row.statement_month),
       totalAmount: Number(row.total_amount),
+      paidAmount: Number(row.paid_amount || 0),
       dueDate: new Date(row.due_date),
-      status: row.status as 'pending' | 'paid',
+      status: row.status as 'pending' | 'partially_paid' | 'paid',
     }));
 
     return {
@@ -1547,7 +1593,8 @@ export async function fetchCardDetail(cardId: string, year: number, month: numbe
 
 import { BankAccount } from '@/lib/definitions';
 
-export async function fetchBankAccounts(): Promise<BankAccount[]> {
+export async function fetchBankAccounts(userId?: string): Promise<BankAccount[]> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -1582,7 +1629,8 @@ export async function fetchBankAccounts(): Promise<BankAccount[]> {
   }
 }
 
-export async function fetchBankLiquiditySummary() {
+export async function fetchBankLiquiditySummary(userId?: string) {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql`
       SELECT 
@@ -1610,7 +1658,8 @@ export async function fetchBankLiquiditySummary() {
   }
 }
 
-export async function fetchBankTransfers() {
+export async function fetchBankTransfers(userId?: string) {
+  const uid = await resolveUserId(userId);
   const db = await sql.connect();
 
   try {
@@ -1659,7 +1708,8 @@ export async function fetchBankTransfers() {
 
 // --- DASHBOARD HOMEPAGE FOCUS & DUES ---
 
-export async function fetchTodayPendingEvents(): Promise<CalendarEvent[]> {
+export async function fetchTodayPendingEvents(userId?: string): Promise<CalendarEvent[]> {
+  const uid = await resolveUserId(userId);
   try {
     const data = await sql<CalendarEvent>`
       SELECT 
@@ -1697,7 +1747,8 @@ export interface UpcomingDueItem {
   targetUrl: string;
 }
 
-export async function fetchUpcomingDues(): Promise<UpcomingDueItem[]> {
+export async function fetchUpcomingDues(userId?: string): Promise<UpcomingDueItem[]> {
+  const uid = await resolveUserId(userId);
   const db = await sql.connect();
   try {
     // 1. Las 3 facturas por cobrar más próximas a vencer o vencidas
@@ -1723,7 +1774,7 @@ export async function fetchUpcomingDues(): Promise<UpcomingDueItem[]> {
     const cardsResult = await db.query(`
       SELECT 
         cs.id,
-        cs.total_amount,
+        (cs.total_amount - COALESCE(cs.paid_amount, 0)) as remaining_amount,
         cs.due_date,
         cs.card_id,
         c.name as card_name,
@@ -1733,7 +1784,7 @@ export async function fetchUpcomingDues(): Promise<UpcomingDueItem[]> {
         END as is_overdue
       FROM card_statements cs
       JOIN cards c ON cs.card_id = c.id
-      WHERE cs.status = 'pending'
+      WHERE cs.status IN ('pending', 'partially_paid')
       ORDER BY cs.due_date ASC
       LIMIT 3
     `);
@@ -1760,7 +1811,7 @@ export async function fetchUpcomingDues(): Promise<UpcomingDueItem[]> {
         type: 'card',
         title: `Resumen ${row.card_name}`,
         subtitle: 'Vencimiento de tarjeta',
-        amount: Number(row.total_amount) / 100,
+        amount: Number(row.remaining_amount) / 100,
         currency: 'ARS',
         dueDate: new Date(row.due_date),
         isOverdue: Boolean(row.is_overdue),

@@ -18,6 +18,7 @@ import {
 } from './definitions';
 import { fetchNextInvoiceNumber } from './data';
 import { calculateCardDates } from './utils';
+import { requireUser } from './auth-guard';
 
 // --- UTILS ---
 
@@ -34,6 +35,7 @@ const parseDateAsLocal = (dateString: string | null | undefined): Date | null =>
 const CreateInvoiceSchema = InvoiceSchema.omit({ id: true, invoice_number: true, amount: true });
 
 export async function createInvoice(prevState: InvoiceState, formData: FormData): Promise<InvoiceState> {
+  const user = await requireUser();
 
   const issueDateValue = formData.get('issue_date') as string;
   const dueDateValue = formData.get('due_date') as string;
@@ -77,16 +79,16 @@ export async function createInvoice(prevState: InvoiceState, formData: FormData)
   // Dentro de createInvoice:
   const discountPercent = Number(discount) || 0;
   const finalAmountInCents = Math.round(totalAmountInCents * (1 - discountPercent / 100));
-  const nextInvoiceNumber = await fetchNextInvoiceNumber();
+  const nextInvoiceNumber = await fetchNextInvoiceNumber(user.id);
 
   const db = await sql.connect();
   try {
     await db.query('BEGIN');
     const insertedInvoice = await db.query(
-      `INSERT INTO invoices (client_id, invoice_number, amount, currency, discount, status, issue_date, due_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO invoices (client_id, invoice_number, amount, currency, discount, status, issue_date, due_date, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
-      [client_id, nextInvoiceNumber, finalAmountInCents, currency, discount, status, issue_date, due_date]
+      [client_id, nextInvoiceNumber, finalAmountInCents, currency, discount, status, issue_date, due_date, user.id]
     );
     const invoiceId = insertedInvoice.rows[0].id;
 
@@ -111,14 +113,15 @@ export async function createInvoice(prevState: InvoiceState, formData: FormData)
 }
 
 export async function deleteInvoice(formData: FormData) {
+  const user = await requireUser();
   const id = formData.get('id')?.toString();
   if (!id) throw new Error('ID de factura no encontrado.');
 
   const db = await sql.connect();
   try {
     await db.query('BEGIN');
-    await db.query(`DELETE FROM line_items WHERE invoice_id = $1`, [id]);
-    await db.query(`DELETE FROM invoices WHERE id = $1`, [id]);
+    await db.query(`DELETE FROM line_items WHERE invoice_id = $1 AND invoice_id IN (SELECT id FROM invoices WHERE user_id = $2)`, [id, user.id]);
+    await db.query(`DELETE FROM invoices WHERE id = $1 AND user_id = $2`, [id, user.id]);
     await db.query('COMMIT');
 
     revalidatePath('/dashboard/finances/invoices');
@@ -134,6 +137,7 @@ export async function deleteInvoice(formData: FormData) {
 const UpdateInvoiceSchema = InvoiceSchema.omit({ id: true, invoice_number: true, amount: true });
 
 export async function updateInvoice(id: string, prevState: InvoiceState, formData: FormData): Promise<InvoiceState> {
+  const user = await requireUser();
   const validatedFields = UpdateInvoiceSchema.safeParse({
     client_id: formData.get('client_id'),
     status: formData.get('status'),
@@ -179,8 +183,8 @@ export async function updateInvoice(id: string, prevState: InvoiceState, formDat
     await db.query(
       `UPDATE invoices
        SET client_id = $1, amount = $2, currency = $3, discount = $4, status = $5, issue_date = $6, due_date = $7
-       WHERE id = $8`,
-      [client_id, finalAmountInCents, currency, discount, status, issue_date, due_date, id]
+       WHERE id = $8 AND user_id = $9`,
+      [client_id, finalAmountInCents, currency, discount, status, issue_date, due_date, id, user.id]
     );
     await db.query(`DELETE FROM line_items WHERE invoice_id = $1`, [id]);
     for (const item of lineItems) {
@@ -205,6 +209,7 @@ export async function updateInvoice(id: string, prevState: InvoiceState, formDat
 
 export async function updateInvoiceStatus(id: string, formData: FormData) {
   'use server';
+  const user = await requireUser();
   const newStatus = formData.get('status')?.toString();
   const validStatuses = ['pendiente', 'facturado', 'vencido'];
   if (!newStatus || !validStatuses.includes(newStatus)) {
@@ -212,7 +217,7 @@ export async function updateInvoiceStatus(id: string, formData: FormData) {
   }
 
   try {
-    await sql`UPDATE invoices SET status = ${newStatus} WHERE id = ${id}`;
+    await sql`UPDATE invoices SET status = ${newStatus} WHERE id = ${id} AND user_id = ${user.id}`;
     revalidatePath(`/dashboard/finances/invoices/${id}/details`);
     revalidatePath('/dashboard/finances/invoices');
   } catch (error) {
@@ -226,6 +231,7 @@ export async function updateInvoiceStatus(id: string, formData: FormData) {
 const CreateClientSchema = ClientSchema.omit({ id: true });
 
 export async function createClient(prevState: ClientState, formData: FormData): Promise<ClientState> {
+  const user = await requireUser();
   const validatedFields = CreateClientSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
@@ -245,8 +251,8 @@ export async function createClient(prevState: ClientState, formData: FormData): 
 
   try {
     await sql`
-      INSERT INTO clients (name, email, brand, phone, image_url)
-      VALUES (${name}, ${email || null}, ${brand || null}, ${phone || null}, ${image_url || null})
+      INSERT INTO clients (name, email, brand, phone, image_url, user_id)
+      VALUES (${name}, ${email || null}, ${brand || null}, ${phone || null}, ${image_url || null}, ${user.id})
     `;
   } catch (error) {
     console.error('Database Error:', error);
@@ -261,16 +267,17 @@ export async function createClient(prevState: ClientState, formData: FormData): 
 }
 
 export async function deleteClient(formData: FormData) {
+  const user = await requireUser();
   const id = formData.get('id')?.toString();
   if (!id) throw new Error('ID de cliente no encontrado.');
 
   try {
-    const invoiceCount = await sql`SELECT COUNT(*) FROM invoices WHERE client_id = ${id}`;
+    const invoiceCount = await sql`SELECT COUNT(*) FROM invoices WHERE client_id = ${id} AND user_id = ${user.id}`;
     if (Number(invoiceCount.rows[0].count) > 0) {
       console.error('Validation Error: Cannot delete client with existing invoices.');
       return;
     }
-    await sql`DELETE FROM clients WHERE id = ${id}`;
+    await sql`DELETE FROM clients WHERE id = ${id} AND user_id = ${user.id}`;
     revalidatePath('/dashboard/finances/clients');
   } catch (error) {
     console.error('Database Error:', error);
@@ -279,6 +286,7 @@ export async function deleteClient(formData: FormData) {
 }
 
 export async function updateClient(id: string, prevState: ClientState, formData: FormData): Promise<ClientState> {
+  const user = await requireUser();
   const validatedFields = ClientSchema.omit({ id: true }).safeParse({
     brand: formData.get('brand'),
     name: formData.get('name'),
@@ -298,7 +306,7 @@ export async function updateClient(id: string, prevState: ClientState, formData:
     await sql`
       UPDATE clients
       SET brand = ${brand}, name = ${name}, email = ${email}, phone = ${phone}
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${user.id}
     `;
   } catch (error) {
     console.error('Database Error:', error);
@@ -349,6 +357,7 @@ export async function createVendor(name: string): Promise<Vendor> {
 
 const CreateCardSchema = CardSchema.omit({ id: true });
 export async function createCard(prevState: CardState, formData: FormData): Promise<CardState> {
+  const user = await requireUser();
   const validatedFields = CreateCardSchema.safeParse({
     name: formData.get('name'),
     last_four_digits: formData.get('last_four_digits'),
@@ -367,8 +376,8 @@ export async function createCard(prevState: CardState, formData: FormData): Prom
 
   try {
     await sql`
-      INSERT INTO cards (name, last_four_digits, closing_day, due_day, color)
-      VALUES (${name}, ${last_four_digits}, ${closing_day}, ${due_day}, ${color})
+      INSERT INTO cards (name, last_four_digits, closing_day, due_day, color, user_id)
+      VALUES (${name}, ${last_four_digits}, ${closing_day}, ${due_day}, ${color}, ${user.id})
     `;
   } catch (error) {
     console.error('Database Error:', error);
@@ -384,6 +393,7 @@ const CreateExpenseSchema = ExpenseSchema.omit({ id: true });
 const CreateTemplateSchema = ExpenseTemplateSchema.omit({ id: true, next_due_date: true });
 
 export async function createExpense(prevState: ExpenseState, formData: FormData): Promise<ExpenseState> {
+  const user = await requireUser();
   const rawAmount = formData.get('amount');
   const amountVal = rawAmount ? Number(rawAmount) : 0;
 
@@ -427,8 +437,8 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
     // Inserción directa sin partición de cuotas en tablas secundarias
     await db.query(
       `INSERT INTO expenses 
-       (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, entity_type, period)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+       (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, entity_type, period, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         data.concept,
         amountInCents,
@@ -442,6 +452,7 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
         data.description,
         data.entity_type,
         period,
+        user.id,
       ]
     );
   } catch (err) {
@@ -456,6 +467,7 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
 }
 
 async function createExpenseTemplate(prevState: ExpenseState, formData: FormData): Promise<ExpenseState> {
+  const user = await requireUser();
   const rawAmount = formData.get('amount');
   const parsedDate = parseDateAsLocal(formData.get('expense_date') as string);
   const validDate = parsedDate ?? new Date();
@@ -493,8 +505,8 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
     // 1. Guardar Molde / Plantilla
     const templateResult = await db.query(
       `INSERT INTO expense_templates 
-       (concept, amount, currency, category_id, vendor_id, frequency, start_date, next_due_date, payment_method, card_id, entity_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       (concept, amount, currency, category_id, vendor_id, frequency, start_date, next_due_date, payment_method, card_id, entity_type, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id`,
       [
         data.concept,
@@ -508,6 +520,7 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
         data.payment_method,
         data.card_id,
         data.entity_type,
+        user.id,
       ]
     );
 
@@ -516,8 +529,8 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
     // 2. Generar la instancia del mes actual con su período correspondiente
     await db.query(
       `INSERT INTO expenses
-       (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, template_id, entity_type, period)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'Generado automáticamente desde plantilla', $9, $10, $11)`,
+       (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, template_id, entity_type, period, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'Generado automáticamente desde plantilla', $9, $10, $11, $12)`,
       [
         data.concept,
         amountInCents,
@@ -530,6 +543,7 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
         templateId,
         data.entity_type,
         period,
+        user.id,
       ]
     );
 
@@ -548,11 +562,12 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
 
 export async function deleteExpense(formData: FormData) {
   'use server';
+  const user = await requireUser();
   const id = formData.get('id')?.toString();
   if (!id) throw new Error('ID de gasto no encontrado.');
 
   try {
-    await sql`DELETE FROM expenses WHERE id = ${id}`;
+    await sql`DELETE FROM expenses WHERE id = ${id} AND user_id = ${user.id}`;
     revalidatePath('/dashboard/finances/expenses');
   } catch (error) {
     console.error('Database Error:', error);
@@ -563,6 +578,7 @@ export async function deleteExpense(formData: FormData) {
 const UpdateExpenseSchema = ExpenseSchema.omit({ id: true }).partial();
 
 export async function updateExpense(id: string, prevState: ExpenseState, formData: FormData): Promise<ExpenseState> {
+  const user = await requireUser();
   const rawData = {
     concept: formData.get('concept'),
     category_id: formData.get('category_id'),
@@ -612,8 +628,8 @@ export async function updateExpense(id: string, prevState: ExpenseState, formDat
       vals.push(id);
 
       await sql.query(
-        `UPDATE expenses SET ${setClause} WHERE id = $${vals.length}`,
-        vals
+        `UPDATE expenses SET ${setClause} WHERE id = ${vals.length} AND user_id = ${vals.length + 1}`,
+        [...vals, user.id]
       );
     }
 
@@ -633,6 +649,7 @@ export async function updateRecurringExpense(
   recurrenceId: string,
   updates: Record<string, unknown>
 ) {
+  const user = await requireUser();
   const db = await sql.connect();
   try {
     const columns: string[] = [];
@@ -651,8 +668,8 @@ export async function updateRecurringExpense(
     }
 
     await db.query(
-      `UPDATE expense_templates SET ${columns.join(", ")} WHERE id = $${values.length + 1}`,
-      [...values, recurrenceId]
+      `UPDATE expense_templates SET ${columns.join(", ")} WHERE id = ${values.length + 1} AND user_id = ${values.length + 2}`,
+      [...values, recurrenceId, user.id]
     );
 
     revalidatePath("/dashboard/finances/expenses");
@@ -665,6 +682,7 @@ export async function updateRecurringExpense(
 export async function processRecurringExpenses(
   selection: { templateId: string; status: 'paid' | 'pending' }[]
 ) {
+  const user = await requireUser();
   const db = await sql.connect();
   try {
     if (!selection || selection.length === 0) return { success: true, count: 0 };
@@ -674,7 +692,7 @@ export async function processRecurringExpenses(
 
     for (const item of selection) {
       // Fetch template
-      const tmplResult = await db.query(`SELECT * FROM expense_templates WHERE id = $1`, [item.templateId]);
+      const tmplResult = await db.query(`SELECT * FROM expense_templates WHERE id = $1 AND user_id = $2`, [item.templateId, user.id]);
       if (tmplResult.rows.length === 0) continue;
       const tmpl = tmplResult.rows[0];
 
@@ -690,8 +708,8 @@ export async function processRecurringExpenses(
         // Insert Expense
         await db.query(
           `INSERT INTO expenses
-            (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, template_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Generado manualmente (Recurrente)', $10)`,
+            (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, template_id, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Generado manualmente (Recurrente)', $10, $11)`,
           [
             tmpl.concept,
             tmpl.amount,
@@ -702,7 +720,8 @@ export async function processRecurringExpenses(
             tmpl.card_id,
             currentDueDate.toISOString(), // Use currently processed date
             item.status,
-            tmpl.id
+            tmpl.id,
+            user.id
           ]
         );
         count++;
@@ -721,8 +740,8 @@ export async function processRecurringExpenses(
 
       // Update Template Next Due Date to the future date we reached
       await db.query(
-        `UPDATE expense_templates SET next_due_date = $1 WHERE id = $2`,
-        [currentDueDate.toISOString(), tmpl.id]
+        `UPDATE expense_templates SET next_due_date = $1 WHERE id = $2 AND user_id = $3`,
+        [currentDueDate.toISOString(), tmpl.id, user.id]
       );
     }
 
@@ -740,12 +759,13 @@ export async function processRecurringExpenses(
 }
 
 export async function checkRecurringExpenses() {
+  const user = await requireUser();
   const db = await sql.connect();
   try {
     const dueTemplates = await db.query(`
       SELECT * FROM expense_templates 
-      WHERE next_due_date <= NOW() AND active = TRUE
-    `);
+      WHERE user_id = $1 AND next_due_date <= NOW() AND active = TRUE
+    `, [user.id]);
 
     if (dueTemplates.rows.length === 0) return { message: "No hay gastos recurrentes pendientes." };
 
@@ -754,8 +774,8 @@ export async function checkRecurringExpenses() {
     for (const tmpl of dueTemplates.rows) {
       await db.query(
         `INSERT INTO expenses
-          (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, template_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'Generado automáticamente (Recurrente)', $9)`,
+          (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, template_id, user_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'Generado automáticamente (Recurrente)', $9, $10)`,
         [
           tmpl.concept,
           tmpl.amount,
@@ -765,7 +785,8 @@ export async function checkRecurringExpenses() {
           tmpl.payment_method,
           tmpl.card_id,
           tmpl.next_due_date,
-          tmpl.id
+          tmpl.id,
+          user.id
         ]
       );
 
@@ -785,8 +806,8 @@ export async function checkRecurringExpenses() {
 
       // Update Template
       await db.query(
-        `UPDATE expense_templates SET next_due_date = $1 WHERE id = $2`,
-        [nextDate.toISOString(), tmpl.id]
+        `UPDATE expense_templates SET next_due_date = $1 WHERE id = $2 AND user_id = $3`,
+        [nextDate.toISOString(), tmpl.id, user.id]
       );
     }
 
@@ -804,12 +825,13 @@ export async function checkRecurringExpenses() {
 }
 
 export async function getDueRecurringExpenses() {
+  const user = await requireUser();
   const db = await sql.connect();
   try {
     const dueTemplates = await db.query(`
       SELECT * FROM expense_templates 
-      WHERE next_due_date <= NOW() AND active = TRUE
-    `);
+      WHERE user_id = $1 AND next_due_date <= NOW() AND active = TRUE
+    `, [user.id]);
 
     return dueTemplates.rows.map(row => ({
       ...row,
@@ -825,6 +847,7 @@ export async function getDueRecurringExpenses() {
 
 export async function saveCardStatement(formData: FormData) {
   'use server';
+  const user = await requireUser();
 
   const cardId = formData.get('card_id') as string;
   const year = Number(formData.get('year'));
@@ -857,23 +880,30 @@ export async function saveCardStatement(formData: FormData) {
 
   const db = await sql.connect();
   try {
+    const cardCheck = await db.query(`SELECT id FROM cards WHERE id = $1 AND user_id = $2`, [cardId, user.id]);
+    if (cardCheck.rows.length === 0) throw new Error('Tarjeta no autorizada.');
     // Operación Upsert con closing_date incluida para satisfacer la restricción NOT NULL
     await db.query(
       `INSERT INTO card_statements (
          card_id, 
          statement_month, 
          total_amount, 
+         paid_amount,
          closing_date, 
          due_date, 
          status
        )
-       VALUES ($1, $2, $3, $4, $5, 'pending')
+       VALUES ($1, $2, $3, 0, $4, $5, 'pending')
        ON CONFLICT (card_id, statement_month)
        DO UPDATE SET
          total_amount = EXCLUDED.total_amount,
          closing_date = EXCLUDED.closing_date,
          due_date = EXCLUDED.due_date,
-         status = 'pending'`,
+         status = CASE 
+           WHEN COALESCE(card_statements.paid_amount, 0) >= EXCLUDED.total_amount THEN 'paid'
+           WHEN COALESCE(card_statements.paid_amount, 0) > 0 THEN 'partially_paid'
+           ELSE 'pending'
+         END`,
       [cardId, statementMonth, amount, closingDate, dueDate]
     );
 
@@ -890,6 +920,7 @@ export async function saveCardStatement(formData: FormData) {
 
 export async function toggleCardStatementStatus(statementId: string | number, currentStatus: string) {
   'use server';
+  const user = await requireUser();
 
   const nextStatus = currentStatus === 'paid' ? 'pending' : 'paid';
   const db = await sql.connect();
@@ -897,10 +928,14 @@ export async function toggleCardStatementStatus(statementId: string | number, cu
   try {
     await db.query('BEGIN');
 
-    // 1. Actualizar el estado del resumen en card_statements
+    // 1. Actualizar el estado del resumen en card_statements y sincronicar paid_amount
     await db.query(
       `UPDATE card_statements 
-       SET status = $1 
+       SET status = $1,
+           paid_amount = CASE 
+             WHEN $1 = 'paid' THEN total_amount 
+             ELSE 0 
+           END
        WHERE id = $2`,
       [nextStatus, statementId]
     );
@@ -913,8 +948,8 @@ export async function toggleCardStatementStatus(statementId: string | number, cu
         `SELECT cs.total_amount, cs.statement_month, cs.card_id, c.name as card_name
          FROM card_statements cs
          JOIN cards c ON cs.card_id = c.id
-         WHERE cs.id = $1`,
-        [statementId]
+         WHERE cs.id = $1 AND c.user_id = $2`,
+        [statementId, user.id]
       );
 
       if (statementRes.rows.length > 0) {
@@ -948,9 +983,10 @@ export async function toggleCardStatementStatus(statementId: string | number, cu
             status,
             entity_type,
             period,
-            description
+            description,
+            user_id
           ) VALUES (
-            $1, $2, 'ARS', $3, 'transfer', $4, CURRENT_DATE, 'paid', 'personal', $5, $6
+            $1, $2, 'ARS', $3, 'transfer', $4, CURRENT_DATE, 'paid', 'personal', $5, $6, $7
           )`,
           [
             `Pago Resumen Tarjeta ${cardName}`,
@@ -959,6 +995,7 @@ export async function toggleCardStatementStatus(statementId: string | number, cu
             row.card_id,
             period,
             `Generado automáticamente desde pago de resumen mensual ${statementIdentifier}`,
+            user.id,
           ]
         );
       }
@@ -966,8 +1003,8 @@ export async function toggleCardStatementStatus(statementId: string | number, cu
       // 3. Si se desmarca a 'pending', eliminamos la salida de caja vinculada
       await db.query(
         `DELETE FROM expenses 
-         WHERE description LIKE '%' || $1 || '%'`,
-        [statementIdentifier]
+         WHERE description LIKE '%' || $1 || '%' AND user_id = $2`,
+        [statementIdentifier, user.id]
       );
     }
 
@@ -988,6 +1025,7 @@ export async function toggleCardStatementStatus(statementId: string | number, cu
 }
 
 export async function ensureMonthlyRecurrences(year: number, month: number) {
+  const user = await requireUser();
   const period = `${year}-${String(month).padStart(2, '0')}`;
   const db = await sql.connect();
 
@@ -1007,7 +1045,8 @@ export async function ensureMonthlyRecurrences(year: number, month: number) {
         description,
         entity_type,
         period,
-        template_id
+        template_id,
+        user_id
       )
       SELECT 
         t.concept,
@@ -1022,14 +1061,15 @@ export async function ensureMonthlyRecurrences(year: number, month: number) {
         'Gasto fijo generado automáticamente',
         t.entity_type,
         $3::varchar,
-        t.id
+        t.id,
+        $4
       FROM expense_templates t
-      WHERE t.active = true
+      WHERE t.active = true AND t.user_id = $4
         AND NOT EXISTS (
           SELECT 1 FROM expenses e 
           WHERE e.template_id = t.id AND e.period = $3::varchar
         )`,
-      [year, month, period]
+      [year, month, period, user.id]
     );
   } catch (error) {
     console.error('Error al sincronizar recurrentes:', error);
@@ -1040,6 +1080,7 @@ export async function ensureMonthlyRecurrences(year: number, month: number) {
 
 export async function toggleInvoicePaymentStatus(invoiceId: string, currentStatus: string) {
   'use server';
+  const user = await requireUser();
 
   // Si está cobrada ('facturado'), vuelve a 'pendiente'; si no, se marca como cobrada ('facturado')
   const nextStatus = currentStatus === 'facturado' ? 'pendiente' : 'facturado';
@@ -1048,7 +1089,7 @@ export async function toggleInvoicePaymentStatus(invoiceId: string, currentStatu
     await sql`
       UPDATE invoices
       SET status = ${nextStatus}
-      WHERE id = ${invoiceId}
+      WHERE id = ${invoiceId} AND user_id = ${user.id}
     `;
 
     revalidatePath('/dashboard/finances/invoices');
@@ -1064,13 +1105,14 @@ export async function toggleInvoicePaymentStatus(invoiceId: string, currentStatu
 // Obtener los ítems y configuración de la última factura de un cliente (para clonar/precargar)
 export async function getLastInvoiceForClient(clientId: string) {
   'use server';
+  const user = await requireUser();
   if (!clientId) return null;
 
   try {
     const invoiceRes = await sql`
       SELECT id, currency, discount 
       FROM invoices 
-      WHERE client_id = ${clientId} 
+      WHERE client_id = ${clientId} AND user_id = ${user.id} 
       ORDER BY issue_date DESC, created_at DESC 
       LIMIT 1
     `;
@@ -1101,6 +1143,7 @@ export async function getLastInvoiceForClient(clientId: string) {
 
 export async function createBankAccount(formData: FormData) {
   'use server';
+  const user = await requireUser();
 
   const name = formData.get('name') as string;
   const account_type = formData.get('account_type') as string;
@@ -1116,8 +1159,8 @@ export async function createBankAccount(formData: FormData) {
 
   try {
     await sql`
-      INSERT INTO bank_accounts (name, account_type, currency, balance, color)
-      VALUES (${name}, ${account_type}, ${currency}, ${balanceInCents}, ${color})
+      INSERT INTO bank_accounts (name, account_type, currency, balance, color, user_id)
+      VALUES (${name}, ${account_type}, ${currency}, ${balanceInCents}, ${color}, ${user.id})
     `;
 
     revalidatePath('/dashboard/finances/banks');
@@ -1131,6 +1174,7 @@ export async function createBankAccount(formData: FormData) {
 
 export async function updateAccountBalance(accountId: string, newBalance: number) {
   'use server';
+  const user = await requireUser();
 
   const balanceInCents = Math.round(newBalance * 100);
 
@@ -1138,7 +1182,7 @@ export async function updateAccountBalance(accountId: string, newBalance: number
     await sql`
       UPDATE bank_accounts
       SET balance = ${balanceInCents}, updated_at = NOW()
-      WHERE id = ${accountId}
+      WHERE id = ${accountId} AND user_id = ${user.id}
     `;
 
     revalidatePath('/dashboard/finances/banks');
@@ -1151,8 +1195,13 @@ export async function updateAccountBalance(accountId: string, newBalance: number
 }
 
 
-export async function payCardStatement(statementId: string, accountId: string) {
+export async function payCardStatement(
+  statementId: string, 
+  accountId: string, 
+  amountToPay?: number
+) {
   'use server';
+  const user = await requireUser();
 
   if (!statementId || !accountId) {
     throw new Error('Faltan parámetros para procesar el pago.');
@@ -1165,11 +1214,11 @@ export async function payCardStatement(statementId: string, accountId: string) {
 
     // 1. Obtener datos del resumen y la tarjeta
     const stmtRes = await db.query(
-      `SELECT cs.id, cs.total_amount, cs.status, c.name as card_name, cs.card_id
+      `SELECT cs.id, cs.total_amount, COALESCE(cs.paid_amount, 0) as paid_amount, cs.status, c.name as card_name, cs.card_id
        FROM card_statements cs
        JOIN cards c ON cs.card_id = c.id
-       WHERE cs.id = $1 FOR UPDATE`,
-      [statementId]
+       WHERE cs.id = $1 AND c.user_id = $2 FOR UPDATE`,
+      [statementId, user.id]
     );
 
     if (stmtRes.rows.length === 0) {
@@ -1179,33 +1228,56 @@ export async function payCardStatement(statementId: string, accountId: string) {
     const statement = stmtRes.rows[0];
 
     if (statement.status === 'paid') {
-      throw new Error('Este resumen ya figura como pagado.');
+      throw new Error('Este resumen ya figura como totalmente pagado.');
     }
 
-    const amountInCents = Number(statement.total_amount);
+    const totalAmount = Number(statement.total_amount);
+    const currentPaid = Number(statement.paid_amount || 0);
+    const remainingDebt = Math.max(0, totalAmount - currentPaid);
 
-    // 2. Descontar saldo de la cuenta bancaria elegida
+    // Si no se especifica amountToPay, se asume el total adeudado
+    const payAmount = (amountToPay !== undefined && amountToPay > 0)
+      ? Number(amountToPay)
+      : remainingDebt;
+
+    // Validación estricta: amountToPay > 0 y amountToPay <= (total_amount - paid_amount)
+    if (payAmount <= 0) {
+      throw new Error('El monto a pagar debe ser mayor a 0.');
+    }
+
+    if (payAmount > remainingDebt + 0.01) {
+      throw new Error(`El monto a pagar ($${payAmount}) no puede exceder el saldo adeudado ($${remainingDebt}).`);
+    }
+
+    const amountInCents = Math.round(payAmount * 100);
+
+    // 2. Descontar saldo de la cuenta bancaria seleccionada
     const updateBankRes = await db.query(
       `UPDATE bank_accounts 
        SET balance = balance - $1, updated_at = NOW() 
-       WHERE id = $2 AND is_active = TRUE
+       WHERE id = $2 AND user_id = $3 AND is_active = TRUE
        RETURNING id, balance`,
-      [amountInCents, accountId]
+      [amountInCents, accountId, user.id]
     );
 
     if (updateBankRes.rows.length === 0) {
       throw new Error('Cuenta bancaria no válida o inactiva.');
     }
 
-    // 3. Marcar el resumen como pagado
+    // 3. Actualizar card_statements (paid_amount y status dinámico)
     await db.query(
       `UPDATE card_statements 
-       SET status = 'paid' 
-       WHERE id = $1`,
-      [statementId]
+       SET 
+         paid_amount = COALESCE(paid_amount, 0) + $1,
+         status = CASE 
+           WHEN COALESCE(paid_amount, 0) + $1 >= total_amount THEN 'paid'
+           ELSE 'partially_paid'
+         END
+       WHERE id = $2`,
+      [payAmount, statementId]
     );
 
-    // 4. Buscar una categoría por defecto para el gasto (fallback seguro para evitar errores NOT NULL)
+    // 4. Buscar categoría para el egreso (fallback seguro)
     const catRes = await db.query(
       `SELECT id FROM expense_categories 
        WHERE name ILIKE '%tarjeta%' OR name ILIKE '%financ%' OR name ILIKE '%servicios%'
@@ -1213,7 +1285,11 @@ export async function payCardStatement(statementId: string, accountId: string) {
     );
     const defaultCategoryId = catRes.rows[0]?.id || null;
 
-    // 5. Registrar el egreso en expenses vinculado a la cuenta
+    // 5. Crear el registro correspondiente en expenses con concepto descriptivo
+    const isTotalPayment = (currentPaid + payAmount) >= (totalAmount - 0.01);
+    const conceptType = isTotalPayment && currentPaid === 0 ? 'Total' : 'Parcial';
+    const conceptLabel = `Pago de resumen ${statement.card_name} (${conceptType})`;
+
     await db.query(
       `INSERT INTO expenses (
         concept, 
@@ -1222,13 +1298,15 @@ export async function payCardStatement(statementId: string, accountId: string) {
         category_id, 
         payment_method, 
         account_id, 
-        status
-      ) VALUES ($1, $2, CURRENT_DATE, $3, 'transfer', $4, 'paid')`,
+        status,
+        user_id
+      ) VALUES ($1, $2, CURRENT_DATE, $3, 'transfer', $4, 'paid', $5)`,
       [
-        `Pago Resumen Tarjeta ${statement.card_name}`,
+        conceptLabel,
         amountInCents,
         defaultCategoryId,
         accountId,
+        user.id,
       ]
     );
 
@@ -1236,19 +1314,21 @@ export async function payCardStatement(statementId: string, accountId: string) {
   } catch (error) {
     await db.query('ROLLBACK');
     console.error('Error al pagar resumen de tarjeta:', error);
-    throw new Error('No se pudo procesar el pago del resumen.');
+    throw error instanceof Error ? error : new Error('No se pudo procesar el pago del resumen.');
   } finally {
     db.release();
   }
 
+  // Revalidar rutas solicitadas
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/finances/cards');
-  revalidatePath('/dashboard/finances/banks');
   revalidatePath('/dashboard/finances/expenses');
+  revalidatePath('/dashboard/finances/banks');
 }
 
 export async function createQuickExpense(formData: FormData) {
   'use server';
+  const user = await requireUser();
 
   const concept = formData.get('concept') as string;
   const categoryName = formData.get('categoryName') as string;
@@ -1289,8 +1369,8 @@ export async function createQuickExpense(formData: FormData) {
       await db.query(
         `UPDATE bank_accounts 
          SET balance = balance - $1, updated_at = NOW() 
-         WHERE id = $2 AND is_active = TRUE`,
-        [amountInCents, accountId]
+         WHERE id = $2 AND user_id = $3 AND is_active = TRUE`,
+        [amountInCents, accountId, user.id]
       );
     }
 
@@ -1303,9 +1383,10 @@ export async function createQuickExpense(formData: FormData) {
         category_id, 
         payment_method, 
         account_id, 
-        status
-      ) VALUES ($1, $2, CURRENT_DATE, $3, 'debit_card', $4, 'paid')`,
-      [concept, amountInCents, categoryId, accountId]
+        status,
+        user_id
+      ) VALUES ($1, $2, CURRENT_DATE, $3, 'debit_card', $4, 'paid', $5)`,
+      [concept, amountInCents, categoryId, accountId, user.id]
     );
 
     await db.query('COMMIT');
@@ -1325,6 +1406,7 @@ export async function createQuickExpense(formData: FormData) {
 
 export async function transferBetweenAccounts(formData: FormData) {
   'use server';
+  const user = await requireUser();
 
   const fromAccountId = formData.get('from_account_id') as string;
   const toAccountId = formData.get('to_account_id') as string;
@@ -1350,9 +1432,9 @@ export async function transferBetweenAccounts(formData: FormData) {
     const accountsRes = await db.query(
       `SELECT id, name, currency, balance 
        FROM bank_accounts 
-       WHERE id IN ($1, $2) AND is_active = TRUE
+       WHERE id IN ($1, $2) AND user_id = $3 AND is_active = TRUE
        FOR UPDATE`,
-      [fromAccountId, toAccountId]
+      [fromAccountId, toAccountId, user.id]
     );
 
     if (accountsRes.rows.length !== 2) {
@@ -1376,16 +1458,16 @@ export async function transferBetweenAccounts(formData: FormData) {
     await db.query(
       `UPDATE bank_accounts 
        SET balance = balance - $1, updated_at = NOW() 
-       WHERE id = $2`,
-      [amountInCents, fromAccountId]
+       WHERE id = $2 AND user_id = $3`,
+      [amountInCents, fromAccountId, user.id]
     );
 
     // 3. Acreditar en la cuenta de destino
     await db.query(
       `UPDATE bank_accounts 
        SET balance = balance + $1, updated_at = NOW() 
-       WHERE id = $2`,
-      [amountInCents, toAccountId]
+       WHERE id = $2 AND user_id = $3`,
+      [amountInCents, toAccountId, user.id]
     );
 
     // 4. Registrar en el historial de transferencias
@@ -1412,6 +1494,7 @@ export async function transferBetweenAccounts(formData: FormData) {
 
 export async function collectInvoice(invoiceId: string, accountId: string) {
   'use server';
+  const user = await requireUser();
 
   if (!invoiceId || !accountId) {
     throw new Error('Faltan parámetros para procesar el cobro de la factura.');
@@ -1426,8 +1509,8 @@ export async function collectInvoice(invoiceId: string, accountId: string) {
     const invoiceRes = await db.query(
       `SELECT id, amount, currency, status 
        FROM invoices 
-       WHERE id = $1 FOR UPDATE`,
-      [invoiceId]
+       WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+      [invoiceId, user.id]
     );
 
     if (invoiceRes.rows.length === 0) {
@@ -1447,9 +1530,9 @@ export async function collectInvoice(invoiceId: string, accountId: string) {
     const accountRes = await db.query(
       `SELECT id, name, currency, balance 
        FROM bank_accounts 
-       WHERE id = $1 AND is_active = TRUE 
+       WHERE id = $1 AND user_id = $2 AND is_active = TRUE 
        FOR UPDATE`,
-      [accountId]
+      [accountId, user.id]
     );
 
     if (accountRes.rows.length === 0) {
@@ -1469,8 +1552,8 @@ export async function collectInvoice(invoiceId: string, accountId: string) {
     await db.query(
       `UPDATE bank_accounts 
        SET balance = balance + $1, updated_at = NOW() 
-       WHERE id = $2`,
-      [invoiceAmountInCents, accountId]
+       WHERE id = $2 AND user_id = $3`,
+      [invoiceAmountInCents, accountId, user.id]
     );
 
     // 4. Marcar la factura como cobrada y asociar la cuenta (sin updated_at)
@@ -1479,8 +1562,8 @@ export async function collectInvoice(invoiceId: string, accountId: string) {
        SET status = 'paid', 
            account_id = $1, 
            paid_at = NOW() 
-       WHERE id = $2`,
-      [accountId, invoiceId]
+       WHERE id = $2 AND user_id = $3`,
+      [accountId, invoiceId, user.id]
     );
 
     await db.query('COMMIT');
@@ -1497,6 +1580,11 @@ export async function collectInvoice(invoiceId: string, accountId: string) {
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/finances/invoices');
   revalidatePath('/dashboard/finances/banks');
+}
+
+export async function logOut() {
+  const { signOut } = await import('@/auth');
+  await signOut({ redirectTo: '/login' });
 }
 
 

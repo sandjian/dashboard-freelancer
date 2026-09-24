@@ -1,9 +1,11 @@
+import { requireUser } from '@/lib/auth-guard';
 import { fetchClients, fetchNextInvoiceNumber, fetchLastIssuedInvoices, fetchOverdueInvoices } from '@/lib/data';
 import { CreateInvoiceForm } from '@/components/dashboard/finances/invoices/create-form';
 import { InvoiceSidePanel } from '@/components/dashboard/finances/invoices/invoice-side-panel';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 export default async function CreateInvoicePage() {
+  const user = await requireUser();
   const [clients, nextInvoiceNumber, lastIssued, overdue] = await Promise.all([
     fetchClients(),
     fetchNextInvoiceNumber(),

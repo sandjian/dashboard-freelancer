@@ -51,12 +51,12 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                 </div>
             ) : (
                 <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="min-w-[500px]">
                         <TableHeader>
                             <TableRow className="border-border hover:bg-transparent bg-muted/10">
                                 <TableHead className="w-[48px]"></TableHead>
                                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Concepto</TableHead>
-                                <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo / Categoría</TableHead>
+                                <TableHead className="hidden sm:table-cell text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo / Categoría</TableHead>
                                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha</TableHead>
                                 <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monto</TableHead>
                             </TableRow>
@@ -88,7 +88,7 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                                             {item.description || "Sin descripción"}
                                         </TableCell>
 
-                                        <TableCell className="py-3">
+                                        <TableCell className="py-3 hidden sm:table-cell">
                                             <Badge
                                                 variant="outline"
                                                 className="text-[10px] font-normal px-2 py-0.5 border-border bg-card text-muted-foreground"

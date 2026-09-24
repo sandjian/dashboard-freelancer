@@ -21,8 +21,9 @@ interface CardStatementSheetProps {
     statement: {
         id: string | number;
         totalAmount: number;
+        paidAmount?: number;
         dueDate: Date;
-        status: 'pending' | 'paid';
+        status: 'pending' | 'partially_paid' | 'paid';
     } | null;
     accounts?: BankAccount[];
 }
@@ -53,15 +54,26 @@ export function CardStatementControl({
         }
     };
 
+    const remainingAmount = statement
+        ? Math.max(0, statement.totalAmount - (statement.paidAmount || 0))
+        : 0;
+
     return (
         <div className="mt-3 p-3 rounded-xl border border-border bg-card/60 space-y-3">
             {statement ? (
                 <div className="flex items-center justify-between gap-2">
                     <div>
-                        <div className="text-xs text-muted-foreground">Resumen a pagar</div>
-                        <div className="text-lg font-bold font-mono text-foreground">
-                            {formatCurrency(statement.totalAmount)}
+                        <div className="text-xs text-muted-foreground">
+                            {statement.status === 'partially_paid' ? 'Saldo pendiente' : 'Resumen a pagar'}
                         </div>
+                        <div className="text-lg font-bold font-mono text-foreground">
+                            {formatCurrency(statement.status === 'partially_paid' ? remainingAmount : statement.totalAmount)}
+                        </div>
+                        {statement.status === 'partially_paid' && (
+                            <div className="text-[11px] text-muted-foreground font-mono">
+                                Total: {formatCurrency(statement.totalAmount)} (Pagado: {formatCurrency(statement.paidAmount || 0)})
+                            </div>
+                        )}
                         <div className="text-[11px] text-muted-foreground">
                             Vence: {new Date(statement.dueDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
                         </div>
@@ -73,7 +85,9 @@ export function CardStatementControl({
                             className={
                                 statement.status === 'paid'
                                     ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10 text-xs'
-                                    : 'border-amber-500/30 text-amber-500 bg-amber-500/10 text-xs'
+                                    : statement.status === 'partially_paid'
+                                    ? 'border-amber-500/30 text-amber-500 bg-amber-500/10 text-xs'
+                                    : 'border-blue-500/30 text-blue-500 bg-blue-500/10 text-xs'
                             }
                         >
                             {statement.status === 'paid' ? (
@@ -81,7 +95,7 @@ export function CardStatementControl({
                             ) : (
                                 <Clock className="w-3 h-3 mr-1" />
                             )}
-                            {statement.status === 'paid' ? 'Pagado' : 'Pendiente'}
+                            {statement.status === 'paid' ? 'Pagado' : statement.status === 'partially_paid' ? 'Pago Parcial' : 'Pendiente'}
                         </Badge>
 
                         {statement.status === 'paid' ? (
@@ -99,6 +113,7 @@ export function CardStatementControl({
                                 statementId={statement.id.toString()}
                                 cardName={cardName}
                                 totalAmount={statement.totalAmount}
+                                paidAmount={statement.paidAmount || 0}
                                 accounts={accounts}
                             />
                         )}

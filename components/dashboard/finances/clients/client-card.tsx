@@ -77,7 +77,7 @@ export const ClientCard = React.forwardRef<HTMLDivElement, ClientCardProps>(
             <motion.div
                 ref={ref}
                 className={cn(
-                    "relative w-full overflow-hidden rounded-2xl bg-card border border-border/50 shadow-md group",
+                    "relative w-full overflow-hidden rounded-2xl bg-card border border-border/50 shadow-md group ",
                     className
                 )}
                 variants={cardVariants}
@@ -86,6 +86,7 @@ export const ClientCard = React.forwardRef<HTMLDivElement, ClientCardProps>(
                 whileHover="hover"
                 {...props}
             >
+
                 {/* Banner Image */}
                 <div className={cn("h-32 w-full opacity-90 transition-opacity group-hover:opacity-100")}>
                     <div className="w-full h-full " />

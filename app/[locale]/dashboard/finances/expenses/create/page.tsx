@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import { fetchVendors, fetchExpenseCategories, fetchCards } from '@/lib/data';
 import { CreateExpenseForm } from '@/components/dashboard/finances/expenses/create-form';
 import { Suspense } from 'react';
@@ -13,6 +14,7 @@ export default async function CreateExpensePage({
         amount?: string;
     }>;
 }) {
+  const user = await requireUser();
     const resolvedParams = await searchParams;
     const [vendors, categories, cards] = await Promise.all([
         fetchVendors(),

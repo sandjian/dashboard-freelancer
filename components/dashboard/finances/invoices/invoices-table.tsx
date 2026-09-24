@@ -73,9 +73,9 @@ export async function InvoicesTable({
 
   return (
     <div className="h-full flex flex-col justify-between">
-      {/* Se asegura min-w-full y alineación limpia sin cortar menús */}
+      {/* Se asegura min-w-full y scroll horizontal en móviles para preservar legibilidad */}
       <div className="w-full overflow-x-auto flex-1">
-        <Table>
+        <Table className="min-w-[650px]">
           <TableHeader className="bg-muted/10 sticky top-0 z-10 border-b border-border/30 backdrop-blur-sm">
             <TableRow className="border-border/30 hover:bg-transparent">
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6">

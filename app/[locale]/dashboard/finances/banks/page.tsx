@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import {
     fetchBankAccounts,
     fetchBankLiquiditySummary,
@@ -19,6 +20,7 @@ const accountTypeLabels: Record<string, { label: string; icon: LucideIcon }> = {
 };
 
 export default async function BanksPage() {
+  const user = await requireUser();
     const [accounts, summary, transfers] = await Promise.all([
         fetchBankAccounts(),
         fetchBankLiquiditySummary(),
@@ -30,15 +32,15 @@ export default async function BanksPage() {
     const usdAccountsCount = accounts.filter(a => a.currency === 'USD').length;
 
     return (
-        <div className="p-4 sm:p-6 w-full m-auto max-w-[1600px] space-y-8 min-h-screen text-foreground">
+        <div className="w-full max-w-[1600px] mx-auto space-y-6 sm:space-y-8 min-h-screen text-foreground">
             {/* 1. Hero Banner with tweakcn aesthetics (Unified Header + KPIs container) */}
-            <div className="rounded-[var(--radius)] p-6 sm:p-8 md:p-10 shadow-sm border border-border bg-card relative overflow-hidden">
+            <div className="rounded-[var(--radius)] p-4 sm:p-6 md:p-8 lg:p-10 shadow-sm border border-border bg-card relative overflow-hidden">
                 {/* Subtle background glow effect */}
                 <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
 
                 {/* Banner Top Bar: Title & Controls */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-border relative z-10">
-                    <div className="space-y-1.5 w-full lg:w-auto">
+                <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between pb-6 border-b border-border relative z-10">
+                    <div className="space-y-1.5 w-full xl:w-auto">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
                             <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
                             <span>Tesorería & Cuentas</span>
@@ -51,13 +53,13 @@ export default async function BanksPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="flex items-center gap-3 w-full xl:w-auto">
                         <TransferModal accounts={accounts} />
                     </div>
                 </div>
 
-                {/* KPIs Grid con TranslucentImpactCard */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 pt-6 relative z-10">
+                {/* KPIs Grid: 1 column on < lg, 3 columns on lg+ */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 pt-6 relative z-10">
                     <TranslucentImpactCard
                         title="Liquidez Total (ARS)"
                         value={formatCurrency(summary.totalARS)}
@@ -109,7 +111,9 @@ export default async function BanksPage() {
                                 key={acc.id}
                                 className="group relative overflow-hidden rounded-[var(--radius)] p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between bg-card border border-border shadow-sm hover:shadow-md"
                             >
-                                <div>
+                                <div className="absolute bottom-0 left-0 right-0 top-0 bg-[repeating-linear-gradient(45deg,#808080_0px_1px,transparent_1px_10px)] opacity-30 mask-[radial-gradient(ellipse_80%_50%_at_100%_0%,#000_70%,transparent_110%)] pointer-events-none"></div>
+
+                                <div className="relative z-10">
                                     {/* Cabecera de la cuenta: Icono con color, Nombre y Tipo */}
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-3 min-w-0">
@@ -151,7 +155,7 @@ export default async function BanksPage() {
                                 </div>
 
                                 {/* Footer de la Card de Cuenta */}
-                                <div className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground relative z-10">
                                     <span className="flex items-center gap-1.5">
                                         <span className={cn(
                                             "w-2 h-2 rounded-full",

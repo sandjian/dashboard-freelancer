@@ -3,6 +3,7 @@
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { ClientSchema, ClientState } from './definitions';
+import { requireUser } from './auth-guard';
 
 const UpdateClientSchema = ClientSchema.omit({ id: true });
 
@@ -11,6 +12,8 @@ export async function updateClient(
     prevState: ClientState | null | undefined,
     formData: FormData,
 ) {
+    const user = await requireUser();
+
     const validatedFields = UpdateClientSchema.safeParse({
         name: formData.get('name'),
         email: formData.get('email'),
@@ -32,7 +35,7 @@ export async function updateClient(
         await sql`
       UPDATE clients
       SET name = ${name}, email = ${email}, image_url = ${image_url}, brand = ${brand}, phone = ${phone}
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${user.id}
     `;
     } catch (error) {
         return { message: 'Database Error: Failed to Update Client.' };

@@ -28,7 +28,8 @@ export function TranslucentImpactCard({
                 className
             )}
         >
-            {/* Header: Title + Icon + Trend badge */}
+            <div className="absolute bottom-0 left-0 right-0 top-0 bg-[repeating-linear-gradient(45deg,#808080_0px_1px,transparent_1px_10px)] opacity-30 mask-[radial-gradient(ellipse_80%_50%_at_100%_0%,#000_70%,transparent_110%)] pointer-events-none"></div>
+            {/* Header: Title + Icon */}
             <div className="flex items-center justify-between gap-3 relative z-10">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-card dark:bg-accent /80  text-secondary/40 dark:text-foreground transition-transform duration-300  shadow-xs">
@@ -40,12 +41,6 @@ export function TranslucentImpactCard({
                         </p>
                     </div>
                 </div>
-
-                {trend && (
-                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full  bg-card dark:bg-accent/90 text-foreground shadow-2xs">
-                        {trend}
-                    </span>
-                )}
             </div>
 
             {/* Value Section */}

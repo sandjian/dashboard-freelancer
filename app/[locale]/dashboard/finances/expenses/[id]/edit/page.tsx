@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 // En /app/dashboard/finances/expenses/[id]/edit/page.tsx
 
 import { EditExpenseForm } from "@/components/dashboard/finances/expenses/edit-form";
@@ -6,6 +7,7 @@ import { fetchExpenseById, fetchExpenseCategories, fetchVendors, fetchCards } fr
 import { notFound } from "next/navigation";
 
 export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireUser();
   const { id } = await params;
 
   // 👇 Añadimos fetchCards a la petición en paralelo

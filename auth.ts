@@ -4,10 +4,13 @@ import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { z } from 'zod';
 
-export const { auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
     providers: [
-        Google,
+        Google({
+            clientId: process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET,
+        }),
         Credentials({
             async authorize(credentials) {
                 const parsedCredentials = z

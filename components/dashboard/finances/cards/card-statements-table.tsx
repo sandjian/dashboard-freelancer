@@ -13,7 +13,8 @@ interface StatementHistoryItem {
     statementMonth: Date;
     dueDate: Date;
     totalAmount: number;
-    status: 'pending' | 'paid';
+    paidAmount?: number;
+    status: 'pending' | 'partially_paid' | 'paid';
 }
 
 export function CardStatementsTable({ statements }: { statements: StatementHistoryItem[] }) {
@@ -44,7 +45,8 @@ export function CardStatementsTable({ statements }: { statements: StatementHisto
                     {statements.map((st) => {
                         const dueDate = new Date(st.dueDate);
                         dueDate.setHours(0, 0, 0, 0);
-                        const isOverdue = st.status === 'pending' && dueDate < today;
+                        const isOverdue = (st.status === 'pending' || st.status === 'partially_paid') && dueDate < today;
+                        const remaining = Math.max(0, st.totalAmount - (st.paidAmount || 0));
 
                         return (
                             <TableRow key={st.id} className="border-border hover:bg-muted/20 transition-colors">
@@ -59,18 +61,27 @@ export function CardStatementsTable({ statements }: { statements: StatementHisto
                                         <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 bg-emerald-500/10 text-xs gap-1">
                                             <CheckCircle2 className="w-3 h-3" /> Pagado
                                         </Badge>
+                                    ) : st.status === 'partially_paid' ? (
+                                        <Badge variant="outline" className="border-amber-500/30 text-amber-500 bg-amber-500/10 text-xs gap-1">
+                                            <Clock className="w-3 h-3" /> Parcial ({formatCurrency(remaining)})
+                                        </Badge>
                                     ) : isOverdue ? (
                                         <Badge variant="outline" className="border-rose-500/30 text-rose-500 bg-rose-500/10 text-xs gap-1">
                                             <AlertCircle className="w-3 h-3" /> Vencido
                                         </Badge>
                                     ) : (
-                                        <Badge variant="outline" className="border-amber-500/30 text-amber-500 bg-amber-500/10 text-xs gap-1">
+                                        <Badge variant="outline" className="border-blue-500/30 text-blue-500 bg-blue-500/10 text-xs gap-1">
                                             <Clock className="w-3 h-3" /> Pendiente
                                         </Badge>
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right font-mono font-bold text-foreground">
-                                    {formatCurrency(st.totalAmount)}
+                                    <div>{formatCurrency(st.totalAmount)}</div>
+                                    {st.status === 'partially_paid' && (
+                                        <div className="text-[11px] font-normal text-muted-foreground">
+                                            Resta: {formatCurrency(remaining)}
+                                        </div>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button
@@ -80,7 +91,7 @@ export function CardStatementsTable({ statements }: { statements: StatementHisto
                                         onClick={() => handleToggle(st.id, st.status)}
                                         className="h-8 text-xs font-medium"
                                     >
-                                        {st.status === 'paid' ? 'Desmarcar' : 'Marcar Pagado'}
+                                        {st.status === 'paid' ? 'Desmarcar' : 'Completar Pago'}
                                     </Button>
                                 </TableCell>
                             </TableRow>

@@ -1,16 +1,14 @@
-import { fetchUpcomingRecurringExpenses, fetchExpenseCategoryStats, fetchPendingRecurringExpensesCount } from "@/lib/data";
+import { fetchUpcomingRecurringExpenses, fetchExpenseCategoryStats } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 import { CalendarClock, Zap, PieChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RecurringExpensesList } from "./recurring-expenses-list";
 import { ExpensesCategoryChart } from "./expenses-category-chart";
-import { CheckRecurrenceButton } from "./recurrence-check-button";
 
 export async function SideInsightsPanel({ year, month }: { year: number; month: number }) {
-    const [recurringData, categoryStats, pendingCount] = await Promise.all([
+    const [recurringData, categoryStats] = await Promise.all([
         fetchUpcomingRecurringExpenses(5),
         fetchExpenseCategoryStats(year, month),
-        fetchPendingRecurringExpensesCount()
     ]);
 
     // Ensure data matches the expected type
@@ -56,14 +54,11 @@ export async function SideInsightsPanel({ year, month }: { year: number; month: 
 
             {/* 3. Upcoming Recurring Payments */}
             <div className="rounded-[var(--radius)] border border-border bg-card p-5 sm:p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
-                            <CalendarClock className="w-4 h-4" />
-                        </div>
-                        <h3 className="text-sm font-semibold text-foreground tracking-tight">Próximos</h3>
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
+                        <CalendarClock className="w-4 h-4" />
                     </div>
-                    <CheckRecurrenceButton pendingCount={pendingCount} />
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Próximos</h3>
                 </div>
 
                 {recurring.length === 0 ? (

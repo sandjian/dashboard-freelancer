@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import { fetchCardDetail, fetchBankAccounts } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -13,6 +14,7 @@ export default async function Page({
     params: Promise<{ id: string }>;
     searchParams: Promise<{ year?: string; month?: string }>;
 }) {
+  const user = await requireUser();
     const { id: cardId } = await params;
     const sp = await searchParams;
     const now = new Date();

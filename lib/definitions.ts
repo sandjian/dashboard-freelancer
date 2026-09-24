@@ -3,6 +3,7 @@ import { z } from 'zod';
 // --- INVOICES (Facturas) ---
 export const InvoiceSchema = z.object({
   id: z.string(),
+  user_id: z.string().uuid().optional(),
   client_id: z.string().uuid({
     message: 'Debes seleccionar un cliente.',
   }),
@@ -24,6 +25,7 @@ export type Invoice = z.infer<typeof InvoiceSchema>;
 // --- CLIENTS (Clientes) ---
 export const ClientSchema = z.object({
   id: z.string(),
+  user_id: z.string().uuid().optional(),
   name: z.string({
     message: 'El nombre del cliente es requerido.',
   }).min(3, { message: 'El nombre debe tener al menos 3 caracteres.' }),
@@ -59,6 +61,7 @@ export const FREQUENCIES = ['daily', 'weekly', 'monthly', 'yearly'] as const;
 // 1. EXPENSE TEMPLATES (Plantillas Recurrentes)
 export const ExpenseTemplateSchema = z.object({
   id: z.string().uuid().optional(),
+  user_id: z.string().uuid().optional(),
   concept: z.string().min(1, "El concepto es requerido."),
   amount: z.coerce.number().positive("El monto debe ser positivo."),
   currency: z.string().default('ARS'),
@@ -78,6 +81,7 @@ export type ExpenseTemplate = z.infer<typeof ExpenseTemplateSchema>;
 // 2. EXPENSES (Instancias Reales)
 export const ExpenseSchema = z.object({
   id: z.string().uuid().optional(),
+  user_id: z.string().uuid().optional(),
   template_id: z.string().uuid().nullable().optional(),
   concept: z.string().min(1, "El concepto es requerido."),
   amount: z.coerce.number().positive("El monto debe ser positivo."),
@@ -109,6 +113,7 @@ export type ExpenseInstallment = z.infer<typeof ExpenseInstallmentSchema>;
 // --- CARDS (Tarjetas) ---
 export const CardSchema = z.object({
   id: z.string(),
+  user_id: z.string().uuid().optional(),
   name: z.string().min(1, { message: 'El nombre es requerido.' }),
   last_four_digits: z.string().length(4, { message: 'Deben ser 4 dígitos.' }).optional().nullable(),
   closing_day: z.coerce.number().min(1).max(31, { message: 'Día inválido.' }),
@@ -127,8 +132,9 @@ export type CardWithStatement = {
   statement: {
     id: string;
     totalAmount: number;
+    paidAmount?: number;
     dueDate: Date;
-    status: 'pending' | 'paid';
+    status: 'pending' | 'partially_paid' | 'paid';
   } | null;
 };
 
@@ -309,6 +315,7 @@ export type AccountType = 'bank' | 'wallet' | 'cash' | 'usd_account';
 
 export interface BankAccount {
   id: string;
+  user_id?: string;
   name: string;
   account_type: AccountType;
   currency: 'ARS' | 'USD';

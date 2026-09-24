@@ -33,9 +33,9 @@ export function DashboardHeroHeader({
 
     return (
         <>
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-border relative z-10 mb-8">
+            <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between pb-6 border-b border-border relative z-10 mb-8">
                 {/* Title and context */}
-                <div className="space-y-1.5 w-full lg:w-auto">
+                <div className="space-y-1.5 w-full xl:w-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
                         <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />
                         <span>Resumen Financiero</span>
@@ -49,7 +49,7 @@ export function DashboardHeroHeader({
                 </div>
 
                 {/* Right Controls: DateNavigator & Action Dropdown */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
                     {/* Date Navigator */}
                     <div className="bg-muted/40 border border-border rounded-xl p-1 text-foreground flex justify-center">
                         <DateNavigator className="bg-transparent border-0 shadow-none text-foreground [&_button]:text-foreground [&_button]:hover:bg-muted [&_span]:text-foreground" />

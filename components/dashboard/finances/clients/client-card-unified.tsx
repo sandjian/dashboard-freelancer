@@ -52,6 +52,8 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
         "bg-card border border-border shadow-sm hover:shadow-md"
       )}
     >
+      <div className="absolute bottom-0 left-0 right-0 top-0 bg-[repeating-linear-gradient(45deg,#808080_0px_1px,transparent_1px_10px)] opacity-30 mask-[radial-gradient(ellipse_80%_50%_at_100%_0%,#000_70%,transparent_110%)] pointer-events-none"></div>
+
       {/* Contenido Principal */}
       <div className="relative z-10">
         {/* Cabecera: Avatar, Nombre/Empresa y Menú de opciones */}

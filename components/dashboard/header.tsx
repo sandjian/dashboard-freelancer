@@ -15,7 +15,11 @@ import { ChevronDown } from "lucide-react";
 
 import { useRouter, usePathname } from "@/i18n/routing";
 
-export function Header({ user }: { user?: { name?: string | null; email?: string | null; image?: string | null } }) {
+export function Header({
+    user,
+}: {
+    user?: { name?: string | null; email?: string | null; image?: string | null };
+}) {
     const locale = useLocale();
     const router = useRouter();
     const pathname = usePathname();
@@ -32,13 +36,15 @@ export function Header({ user }: { user?: { name?: string | null; email?: string
         : 'CN';
 
     return (
-        <header className="hidden md:flex h-16 w-full items-center justify-between border-b border-border bg-background py-6 px-6">
+        <header className="hidden xl:flex h-16 w-full items-center justify-between border-b border-border bg-background py-6 px-6">
             {/* Left side (Date) */}
-            <div className="hidden md:flex flex-col">
-                <h2 className="text-sm text-foreground capitalize">
+            <div className="flex items-center gap-3">
+                <h2 className="text-sm font-medium text-foreground capitalize tracking-tight">
                     {currentDate}
                 </h2>
-            </div>            {/* Right side (Toggle + Avatar) */}
+            </div>
+
+            {/* Right side (Toggle + Avatar) */}
             <div className="flex items-center gap-3">
 
                 <HorizontalThemeWipeToggle />
@@ -80,7 +86,7 @@ export function Header({ user }: { user?: { name?: string | null; email?: string
                     </DropdownMenu>
                 </div>
                 <div className="flex items-center gap-3 pl-4 border-l border-border">
-                    <div className="flex-col items-end hidden md:flex">
+                    <div className="flex-col items-end hidden xl:flex">
                         <span className="text-sm font-semibold text-foreground">{user?.name || 'Usuario'}</span>
                         <span className="text-xs text-muted-foreground">{user?.email || 'Freelancer'}</span>
                     </div>

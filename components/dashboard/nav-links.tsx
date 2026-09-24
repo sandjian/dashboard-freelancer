@@ -11,10 +11,19 @@ import {
   CalendarIcon,
 } from '@heroicons/react/24/outline';
 import { Link } from '@/i18n/routing';
-import clsx from 'clsx';
+import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
-export default function NavLinks() {
+interface NavLinksProps {
+  isCollapsed?: boolean;
+}
+
+export default function NavLinks({ isCollapsed = false }: NavLinksProps) {
   const t = useTranslations('Common');
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,42 +45,52 @@ export default function NavLinks() {
   ];
 
   return (
-    <>
+    <div className="flex flex-col space-y-1 w-full">
       {links.map((link) => {
         const LinkIcon = link.icon;
-        // Basic active check (might need improvement for locale prefixes if usePathname includes it)
-        // usage of next/navigation usePathname in localized app usually includes locale: /es/dashboard
-        // links.href is /dashboard.
-        // We really should use `usePathname` from `next-intl/navigation` or just check inclusion.
-        // Actually, let's strictly check content.
+        const isActive =
+          pathname.endsWith(link.href) ||
+          (link.href !== '/dashboard' && pathname.includes(link.href));
 
-        // However, next-intl's Link handles the href prop by adding locale.
-        // But for active state, we compare the current pathname.
-
-        // Cleanest way:
-        // pathname might be "/es/dashboard/..."
-        // link.href is "/dashboard"
-
-        // Let's use a simpler check for now: 
-        const isActive = pathname.endsWith(link.href) || (link.href !== '/dashboard' && pathname.includes(link.href));
-
-        return (
+        const linkContent = (
           <Link
-            key={link.href}
             href={`${link.href}${queryString}`}
-            className={clsx(
-              'flex h-[48px] grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium transition-all duration-200 md:flex-none md:justify-start md:p-2 md:px-3',
-              {
-                'bg-sidebar-accent text-sidebar-primary dark:text-white shadow-sm': isActive,
-                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground': !isActive,
-              },
+            className={cn(
+              'group relative flex h-10 w-full items-center rounded-lg text-sm font-medium transition-all duration-200 select-none outline-none',
+              isCollapsed
+                ? 'justify-center px-0'
+                : 'justify-start px-3 gap-3',
+              isActive
+                ? 'bg-sidebar-accent text-sidebar-primary dark:text-white shadow-xs font-semibold'
+                : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
             )}
           >
-            <LinkIcon className="w-6" />
-            <p className="hidden md:block">{link.name}</p>
+            <LinkIcon className="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-105" />
+
+            {/* In collapsed mode, the text is completely removed from flow */}
+            {!isCollapsed && (
+              <span className="truncate transition-opacity duration-200 text-xs sm:text-sm">
+                {link.name}
+              </span>
+            )}
           </Link>
         );
+
+        if (isCollapsed) {
+          return (
+            <Tooltip key={link.href}>
+              <TooltipTrigger asChild>
+                {linkContent}
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={12}>
+                {link.name}
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
+
+        return <div key={link.href}>{linkContent}</div>;
       })}
-    </>
+    </div>
   );
 }

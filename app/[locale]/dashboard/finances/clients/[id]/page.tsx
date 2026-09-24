@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import { fetchClientDetailsById, fetchClientRevenueHistory, fetchClientCalendarEvents } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { ClientInvoicesTable } from '@/components/dashboard/finances/clients/client-invoices-table';
@@ -23,6 +24,7 @@ export default async function ClientDetailsPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  const user = await requireUser();
   const { id } = await params;
 
   const [data, revenueHistory, calendarEvents] = await Promise.all([

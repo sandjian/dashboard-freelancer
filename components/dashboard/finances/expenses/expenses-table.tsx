@@ -12,7 +12,10 @@ import {
   ArrowRightLeft,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  User,
+  Target
 } from 'lucide-react';
 
 export async function ExpensesTable({
@@ -53,7 +56,7 @@ export async function ExpensesTable({
   return (
     <div className="h-full flex flex-col justify-between">
       <div className="w-full overflow-x-auto flex-1">
-        <Table>
+        <Table className="min-w-[650px]">
           <TableHeader className="bg-muted/10 sticky top-0 z-10 border-b border-border/30 backdrop-blur-sm">
             <TableRow className="border-border/30 hover:bg-transparent">
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6 w-[85px]">
@@ -118,26 +121,29 @@ export async function ExpensesTable({
                         </span>
                       )}
 
-                      {/* Badge Destino: Personal vs Negocio */}
+                      {/* Badge Destino: Personal vs Negocio con iconos */}
                       {expense.entity_type === 'business' ? (
-                        <Badge variant="outline" className="border-border text-foreground/80 bg-muted/30 text-[10px] px-1.5 py-0 font-mono">
-                          🏢 Negocio
+                        <Badge variant="outline" title="Gasto de Negocio" className="border-border text-foreground/80 bg-muted/30 text-[10px] px-1.5 py-0.5 font-mono flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-foreground/70" />
+                          <span className="hidden sm:inline">Negocio</span>
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-border text-muted-foreground bg-muted/20 text-[10px] px-1.5 py-0 font-mono">
-                          🏠 Personal
+                        <Badge variant="outline" title="Gasto Personal" className="border-border text-muted-foreground bg-muted/20 text-[10px] px-1.5 py-0.5 font-mono flex items-center gap-1">
+                          <User className="w-3 h-3 text-muted-foreground" />
+                          <span className="hidden sm:inline">Personal</span>
                         </Badge>
                       )}
 
-                      {/* Badge Fijo / Plantilla */}
+                      {/* Badge Fijo / Plantilla con icono de blanco (Target) */}
                       {expense.template_id && (
-                        <Badge variant="outline" className="border-border text-muted-foreground bg-muted/40 text-[10px] px-1.5 py-0 shadow-none font-mono">
-                          Fijo
+                        <Badge variant="outline" title="Gasto Fijo" className="border-border text-muted-foreground bg-muted/40 text-[10px] px-1.5 py-0.5 shadow-none font-mono flex items-center gap-1">
+                          <Target className="w-3 h-3 text-muted-foreground" />
+                          <span className="hidden sm:inline">Fijo</span>
                         </Badge>
                       )}
 
                       {isSummary && (
-                        <Badge variant="outline" className="border-border text-muted-foreground bg-muted/40 text-[10px] px-1.5 py-0 shadow-none font-mono">
+                        <Badge variant="outline" className="border-border text-muted-foreground bg-muted/40 text-[10px] px-1.5 py-0.5 shadow-none font-mono">
                           Resumen
                         </Badge>
                       )}

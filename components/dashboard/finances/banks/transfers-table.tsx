@@ -148,7 +148,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
 
             {/* Table Area */}
             <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[650px]">
                     <TableHeader>
                         <TableRow className="border-border/30 hover:bg-transparent bg-muted/10">
                             <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6">

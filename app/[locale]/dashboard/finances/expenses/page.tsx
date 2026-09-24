@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-guard';
 import {
   fetchExpenseStats,
   fetchVendors,
@@ -41,6 +42,7 @@ export default async function ExpensesPage({
     category_id?: string;
   }>;
 }) {
+  const user = await requireUser();
 
   const resolvedSearchParams = await searchParams;
 
@@ -78,16 +80,16 @@ export default async function ExpensesPage({
   const recurringPercentage = (expenseStats.recurringAmount / totalAmount) * 100;
 
   return (
-    <div className="p-4 sm:p-6 w-full m-auto max-w-[1600px] space-y-8 min-h-screen text-foreground">
+    <div className="w-full max-w-[1600px] mx-auto space-y-6 sm:space-y-8 min-h-screen text-foreground">
 
       {/* 1. Hero Banner with tweakcn aesthetics (Header + KPIs unified container) */}
-      <div className="rounded-[var(--radius)] p-6 sm:p-8 md:p-10 shadow-sm border border-border bg-card relative overflow-hidden">
+      <div className="rounded-[var(--radius)] p-4 sm:p-6 md:p-8 lg:p-10 shadow-sm border border-border bg-card relative overflow-hidden">
         {/* Subtle background glow effect */}
         <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
 
         {/* Banner Top Bar: Title & Controls */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-border relative z-10">
-          <div className="space-y-1.5 w-full lg:w-auto">
+        <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between pb-6 border-b border-border relative z-10">
+          <div className="space-y-1.5 w-full xl:w-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
               <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
               <span>Gestión de Salidas</span>
@@ -100,7 +102,7 @@ export default async function ExpensesPage({
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
             {/* Custom styled DateNavigator */}
             <div className="bg-muted/40 border border-border rounded-xl p-1 text-foreground flex justify-center">
               <DateNavigator className="bg-transparent border-0 shadow-none text-foreground [&_button]:text-foreground [&_button]:hover:bg-muted [&_span]:text-foreground" />
@@ -130,8 +132,8 @@ export default async function ExpensesPage({
           </div>
         </div>
 
-        {/* Banner Metric Cards */}
-        <div className="grid gap-5 sm:gap-6 md:grid-cols-3 pt-6 sm:pt-8 relative z-10">
+        {/* Banner Metric Cards: 1 column on < lg, 3 columns on lg+ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 pt-6 sm:pt-8 relative z-10">
           {/* KPI 1: Gasto Total */}
           <TranslucentImpactCard
             title="Gasto Total"

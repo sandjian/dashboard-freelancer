@@ -18,7 +18,7 @@ export default function SideNav({ user }: { user?: { name?: string | null; email
           href="/"
         >
           <div className="w-32 text-sidebar-foreground md:w-40 relative z-10">
-            <span className='text-3xl font-extrabold tracking-tighter text-sidebar-foreground group-hover:text-sidebar-primary transition-colors duration-600'>GAIA</span>
+            <span className='text-3xl font-extrabold tracking-tighter text-sidebar-foreground group-hover:text-sidebar-primary transition-colors duration-600'>AVALON</span>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mt-1 group-hover:text-sidebar-primary/70 transition-colors">Intelligent Finance</p>
           </div>
         </Link>

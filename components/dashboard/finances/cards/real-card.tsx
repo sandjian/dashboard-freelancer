@@ -28,8 +28,9 @@ interface RealCardProps {
     statement?: {
         id: string | number;
         totalAmount: number;
+        paidAmount?: number;
         dueDate: Date;
-        status: 'pending' | 'paid';
+        status: 'pending' | 'partially_paid' | 'paid';
     } | null;
     year?: number;
     month?: number;
@@ -137,7 +138,13 @@ export function RealCard({
                             {/* Fila superior en el dorso: Estado y Menú de 3 puntos */}
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-mono font-medium tracking-wider uppercase text-white/70">
-                                    {statement ? (statement.status === 'paid' ? 'Resumen Saldado' : 'Resumen Pendiente') : 'Sin Movimientos'}
+                                    {statement ? (
+                                        statement.status === 'paid' 
+                                            ? 'Resumen Saldado' 
+                                            : statement.status === 'partially_paid'
+                                            ? 'Resumen Parcial'
+                                            : 'Resumen Pendiente'
+                                    ) : 'Sin Movimientos'}
                                 </span>
 
                                 <div className="relative">
@@ -167,11 +174,31 @@ export function RealCard({
                             {/* Centro del dorso: Total del período */}
                             <div className="text-center py-1">
                                 {statement ? (
-                                    <div className="space-y-0.5">
-                                        <span className="text-[9px] font-mono uppercase tracking-widest text-white/70">Total Período</span>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <span className="text-[9px] font-mono uppercase tracking-widest text-white/70">
+                                                {statement.status === 'partially_paid' ? 'Saldo Restante' : 'Total Período'}
+                                            </span>
+                                        </div>
                                         <p className="text-xl sm:text-2xl font-mono font-bold tracking-tight text-white drop-shadow-sm">
-                                            {formatCurrency(statement.totalAmount)}
+                                            {formatCurrency(
+                                                statement.status === 'partially_paid'
+                                                    ? Math.max(0, statement.totalAmount - (statement.paidAmount || 0))
+                                                    : statement.totalAmount
+                                            )}
                                         </p>
+                                        {statement.status === 'partially_paid' ? (
+                                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-200 font-mono text-[10px]">
+                                                <span>Parcial:</span>
+                                                <span className="font-semibold text-white">{formatCurrency(statement.paidAmount || 0)}</span>
+                                                <span>/</span>
+                                                <span>{formatCurrency(statement.totalAmount)}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] font-mono text-white/60 block">
+                                                Vence: {new Date(statement.dueDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                                            </span>
+                                        )}
                                     </div>
                                 ) : (
                                     <p className="text-xs text-white/70 font-mono">No hay resumen cargado este mes</p>
@@ -204,6 +231,7 @@ export function RealCard({
                                                 statementId={statement.id.toString()}
                                                 cardName={name}
                                                 totalAmount={statement.totalAmount}
+                                                paidAmount={statement.paidAmount || 0}
                                                 accounts={accounts}
                                             />
                                         </div>
