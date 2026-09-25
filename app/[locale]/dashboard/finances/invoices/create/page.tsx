@@ -4,8 +4,14 @@ import { CreateInvoiceForm } from '@/components/dashboard/finances/invoices/crea
 import { InvoiceSidePanel } from '@/components/dashboard/finances/invoices/invoice-side-panel';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
-export default async function CreateInvoicePage() {
+export default async function CreateInvoicePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ client_id?: string }>;
+}) {
   const user = await requireUser();
+  const resolvedSearchParams = await searchParams;
+  const preselectedClientId = resolvedSearchParams?.client_id;
   const [clients, nextInvoiceNumber, lastIssued, overdue] = await Promise.all([
     fetchClients(),
     fetchNextInvoiceNumber(),
@@ -51,6 +57,7 @@ export default async function CreateInvoicePage() {
             <CreateInvoiceForm
               clients={clients}
               nextInvoiceNumber={nextInvoiceNumber}
+              initialClientId={preselectedClientId}
             />
           </div>
 

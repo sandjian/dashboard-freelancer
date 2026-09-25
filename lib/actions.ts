@@ -624,12 +624,14 @@ export async function updateExpense(id: string, prevState: ExpenseState, formDat
     if (cols.length > 0) {
       // Construct SET clause: "col1 = $1, col2 = $2, ..."
       const setClause = cols.map((col, idx) => `${col} = $${idx + 1}`).join(', ');
-      // Add ID as last param
-      vals.push(id);
+      // Add ID and user_id as positional params
+      const idParamIndex = vals.length + 1;
+      const userParamIndex = vals.length + 2;
+      vals.push(id, user.id);
 
       await sql.query(
-        `UPDATE expenses SET ${setClause} WHERE id = ${vals.length} AND user_id = ${vals.length + 1}`,
-        [...vals, user.id]
+        `UPDATE expenses SET ${setClause} WHERE id = $${idParamIndex} AND user_id = $${userParamIndex}`,
+        vals
       );
     }
 

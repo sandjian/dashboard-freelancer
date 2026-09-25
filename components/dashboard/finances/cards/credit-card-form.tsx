@@ -233,6 +233,9 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                         maxLength={networkDetails.maxLength + (networkDetails.network === "amex" ? 2 : 3)}
                         type="tel"
                         inputMode="numeric"
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-form-type="other"
                         className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono tracking-widest placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder="•••• •••• •••• ••••"
                         value={formattedNumber}
@@ -251,6 +254,8 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                         id="card_holder"
                         name="card_holder"
                         maxLength={50}
+                        autoComplete="off"
+                        data-lpignore="true"
                         className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm uppercase placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
                         placeholder="NOMBRE COMPLETO"
                         value={holder}
@@ -269,6 +274,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                         <select
                             id="card_month"
                             name="card_month"
+                            autoComplete="off"
                             value={month}
                             onChange={(e) => setMonth(e.target.value)}
                             onFocus={() => setFocusField("expire")}
@@ -291,6 +297,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                         <select
                             id="card_year"
                             name="card_year"
+                            autoComplete="off"
                             value={year}
                             onChange={(e) => setYear(e.target.value)}
                             onFocus={() => setFocusField("expire")}
@@ -316,6 +323,8 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                             maxLength={networkDetails.cvvLength}
                             type="password"
                             inputMode="numeric"
+                            autoComplete="new-password"
+                            data-lpignore="true"
                             className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono tracking-widest placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                             placeholder={"•".repeat(networkDetails.cvvLength)}
                             value={cvv}
@@ -338,6 +347,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                             type="number"
                             min="1"
                             max="31"
+                            autoComplete="off"
                             className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                             placeholder="Ej. 24"
                             value={closingDay}
@@ -358,6 +368,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                             type="number"
                             min="1"
                             max="31"
+                            autoComplete="off"
                             className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                             placeholder="Ej. 5"
                             value={dueDay}

@@ -11,10 +11,9 @@ import { formatCurrency } from "@/lib/utils";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { saveCardStatement, toggleCardStatementStatus } from "@/lib/actions";
+import { toggleCardStatementStatus } from "@/lib/actions";
 import { PayStatementModal } from "./pay-statement-modal";
+import { StatementUploadModal } from "./statement-upload-modal";
 import { BankAccount } from "@/lib/definitions";
 
 interface RealCardProps {
@@ -104,6 +103,24 @@ export function RealCard({
 
     return (
         <div className="relative w-full max-w-[420px] mx-auto group/card px-1">
+            {/* Botón flotante estable para eliminar tarjeta sin verse afectado por el giro 3D */}
+            <div className="absolute -top-2.5 right-1 z-30 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="h-7 w-7 rounded-full shadow-md hover:scale-105 transition-transform"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDeleteDialogOpen(true);
+                    }}
+                    title="Eliminar tarjeta"
+                    aria-label="Eliminar tarjeta"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+            </div>
+
             <div className="relative rounded-[16px] transition-all duration-300 group-hover/card:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)]">
                 {/* Renderizado de la tarjeta con flip en hover */}
                 <FlippableCreditCard
@@ -237,80 +254,21 @@ export function RealCard({
                                         </div>
                                     )
                                 ) : (
-                                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                        <DialogTrigger asChild>
-                                            <button className="w-full h-8 rounded-lg text-xs font-medium font-mono text-zinc-950 bg-white hover:bg-zinc-200 border border-white/30 flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
-                                                <Plus className="w-3.5 h-3.5" />
-                                                <span>Cargar Resumen</span>
-                                            </button>
-                                        </DialogTrigger>
-                                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
-                                    <DialogHeader>
-                                        <DialogTitle className="flex items-center gap-2 text-zinc-100 font-mono">
-                                            <CreditCard className="w-4 h-4 text-zinc-400" />
-                                            Cargar Resumen: {name}
-                                        </DialogTitle>
-                                    </DialogHeader>
-
-                                    <form
-                                        action={async (formData) => {
-                                            await saveCardStatement(formData);
-                                            setIsDialogOpen(false);
-                                        }}
-                                        className="space-y-4 pt-2"
-                                    >
-                                        <input type="hidden" name="card_id" value={id} />
-                                        <input type="hidden" name="year" value={year} />
-                                        <input type="hidden" name="month" value={month} />
-
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor={`amount-${id}`} className="text-zinc-300 text-xs">Total del Resumen ($)</Label>
-                                            <Input
-                                                id={`amount-${id}`}
-                                                name="total_amount"
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                required
-                                                autoFocus
-                                                className="text-xl font-bold font-mono h-11 bg-zinc-900/80 border-zinc-800 text-white"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor={`due-${id}`} className="text-zinc-300 text-xs">Fecha de Vencimiento</Label>
-                                            <Input
-                                                id={`due-${id}`}
-                                                name="due_date"
-                                                type="date"
-                                                defaultValue={defaultDueDate}
-                                                required
-                                                className="bg-zinc-900/80 border-zinc-800 text-white h-10 font-mono text-xs"
-                                            />
-                                        </div>
-
-                                        <div className="flex justify-end gap-2 pt-2">
-                                            <Button type="button" variant="ghost" className="text-zinc-400 hover:text-white" onClick={() => setIsDialogOpen(false)}>
-                                                Cancelar
-                                            </Button>
-                                            <Button
-                                                type="submit"
-                                                className="bg-white text-zinc-950 hover:bg-zinc-200 font-mono text-xs font-semibold rounded-lg"
-                                            >
-                                                Guardar Resumen
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
-                        )}
-                    </div>
-                </div>
+                                    <StatementUploadModal
+                                        cardId={id}
+                                        cardName={name}
+                                        year={year}
+                                        month={month}
+                                        defaultDueDate={defaultDueDate}
+                                    />
+                                )}
+                            </div>
+                        </div>
                     }
                 />
             </div>
 
-            {/* Modal de confirmación para eliminar tarjeta (disparado desde el menú de 3 puntos) */}
+            {/* Modal de confirmación para eliminar tarjeta */}
             <DeleteCardDialog
                 cardId={id}
                 cardName={name}

@@ -35,7 +35,15 @@ const statusOptions = [
   { value: 'vencido', label: 'Vencido', icon: FileClockIcon },
 ];
 
-export function CreateInvoiceForm({ clients, nextInvoiceNumber }: { clients: Client[], nextInvoiceNumber: number }) {
+export function CreateInvoiceForm({
+  clients,
+  nextInvoiceNumber,
+  initialClientId,
+}: {
+  clients: Client[];
+  nextInvoiceNumber: number;
+  initialClientId?: string;
+}) {
   const initialState: InvoiceState = { message: null, errors: {} };
   const [state, formAction] = useActionState(createInvoice, initialState);
 
@@ -53,7 +61,12 @@ export function CreateInvoiceForm({ clients, nextInvoiceNumber }: { clients: Cli
   const [discount, setDiscount] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(() => {
+    if (initialClientId) {
+      return clients.find((c) => c.id === initialClientId) || null;
+    }
+    return null;
+  });
   const [isClientModalOpen, setClientModalOpen] = useState(false);
   const [isCloning, startCloning] = useTransition();
 
@@ -154,7 +167,7 @@ export function CreateInvoiceForm({ clients, nextInvoiceNumber }: { clients: Cli
                         <DialogDescription>Selecciona un cliente para la factura.</DialogDescription>
                       </div>
                       <Button asChild size="sm" variant="secondary">
-                        <Link href="/dashboard/clients">
+                        <Link href="/dashboard/finances/clients">
                           <span className="mr-2">+</span> Crear Cliente
                         </Link>
                       </Button>
@@ -203,7 +216,7 @@ export function CreateInvoiceForm({ clients, nextInvoiceNumber }: { clients: Cli
                         size="sm"
                         disabled={isCloning}
                         onClick={handleLoadLastInvoice}
-                        className="h-6 text-[11px] gap-1 px-2 text-primary hover:bg-primary/10"
+                        className="h-6 text-[11px] gap-1 px-2.5 bg-primary text-white hover:bg-primary/90 shadow-xs"
                       >
                         {isCloning ? (
                           <Loader2 className="w-3 h-3 animate-spin" />

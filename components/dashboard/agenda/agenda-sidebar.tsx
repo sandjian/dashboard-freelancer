@@ -100,7 +100,7 @@ export function AgendaSidebar({
                 <Button
                     size="sm"
                     onClick={() => onNewEvent(selectedDate)}
-                    className="h-8 gap-1.5 px-2.5 text-xs font-medium shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+                    className="h-8 gap-1.5 px-3 text-xs font-semibold shrink-0 bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-sm transition-colors cursor-pointer"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Nueva</span>

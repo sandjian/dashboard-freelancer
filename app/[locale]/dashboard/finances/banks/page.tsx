@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Landmark, Wallet, Banknote, DollarSign, LucideIcon, Sparkles, Building2, ArrowLeftRight } from 'lucide-react';
 import { AccountBalanceModal } from '@/components/dashboard/finances/banks/account-balance-modal';
+import { CreateAccountModal } from '@/components/dashboard/finances/banks/create-account-modal';
 import { TransferModal } from '@/components/dashboard/finances/banks/transfer-modal';
 import { TransfersTable } from '@/components/dashboard/finances/banks/transfers-table';
 import { TranslucentImpactCard } from '@/components/dashboard/finances/invoices/translucent-impact-card';
@@ -54,6 +55,7 @@ export default async function BanksPage() {
                     </div>
 
                     <div className="flex items-center gap-3 w-full xl:w-auto">
+                        <CreateAccountModal />
                         <TransferModal accounts={accounts} />
                     </div>
                 </div>

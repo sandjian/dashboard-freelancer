@@ -244,27 +244,27 @@ export function CalendarView({
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Right Side Column (~30-32%): Feed / Bitácora */}
-                <div className="xl:col-span-4 min-h-[400px] xl:min-h-[640px] xl:sticky xl:top-6">
-                    <AgendaSidebar
-                        events={events}
-                        selectedDate={selectedDate}
-                        onSelectDate={setSelectedDate}
-                        onNewEvent={handleNewEvent}
-                        onEditEvent={handleEditEvent}
-                        clients={clients}
-                    />
-                </div>
-
-                <EventDialog
-                    open={isDialogOpen}
-                    onOpenChange={setIsDialogOpen}
+            {/* Right Side Column (~30-32%): Feed / Bitácora */}
+            <div className="xl:col-span-4 min-h-[400px] xl:min-h-[640px] xl:sticky xl:top-6">
+                <AgendaSidebar
+                    events={events}
                     selectedDate={selectedDate}
-                    eventToEdit={selectedEvent}
+                    onSelectDate={setSelectedDate}
+                    onNewEvent={handleNewEvent}
+                    onEditEvent={handleEditEvent}
                     clients={clients}
                 />
             </div>
+
+            <EventDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                selectedDate={selectedDate}
+                eventToEdit={selectedEvent}
+                clients={clients}
+            />
         </div>
     )
 }
