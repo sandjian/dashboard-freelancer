@@ -223,7 +223,7 @@ export async function fetchGlobalOverdueStats(userId?: string): Promise<{ amount
     const data = await sql`
         SELECT COALESCE(SUM(amount), 0) as total_amount, COUNT(*) as total_count 
         FROM invoices 
-        WHERE status = 'vencido' OR (status = 'pendiente' AND due_date < NOW())
+        WHERE user_id = ${uid} AND (status = 'vencido' OR (status = 'pendiente' AND due_date < NOW()))
       `;
     return {
       amount: Number(data.rows[0].total_amount) / 100,
@@ -265,7 +265,8 @@ export async function fetchInvoiceStats(year: number, month: number, userId?: st
         COUNT(*) FILTER (WHERE status = 'vencido' OR (status = 'pendiente' AND due_date < CURRENT_DATE)) AS vencido_count,
         COALESCE(SUM(amount) FILTER (WHERE status = 'vencido' OR (status = 'pendiente' AND due_date < CURRENT_DATE)), 0) AS vencido_amount
       FROM invoices
-      WHERE EXTRACT(YEAR FROM issue_date) = ${year} 
+      WHERE user_id = ${uid}
+        AND EXTRACT(YEAR FROM issue_date) = ${year} 
         AND EXTRACT(MONTH FROM issue_date) = ${month}
     `;
 
@@ -307,7 +308,8 @@ export async function fetchClientsWithStats(userId?: string): Promise<ClientWith
           COALESCE(SUM(CASE WHEN invoices.status = 'vencido' OR (invoices.status = 'pendiente' AND invoices.due_date < CURRENT_DATE) THEN invoices.amount ELSE 0 END), 0) / 100.0 AS overdue_amount,
           MAX(invoices.issue_date) AS last_invoice_date
         FROM clients 
-        LEFT JOIN invoices ON clients.id = invoices.client_id
+        LEFT JOIN invoices ON clients.id = invoices.client_id AND invoices.user_id = ${uid}
+        WHERE clients.user_id = ${uid}
         GROUP BY clients.id, clients.name, clients.brand, clients.email, clients.phone, clients.image_url
         ORDER BY clients.name ASC
       `;
@@ -350,8 +352,8 @@ export async function fetchClientDetailsById(id: string, userId?: string) {
           COALESCE(SUM(CASE WHEN i.status = 'pendiente' AND i.due_date >= CURRENT_DATE THEN i.amount ELSE 0 END), 0) / 100.0 as pending_amount,
           COALESCE(SUM(CASE WHEN i.status = 'vencido' OR (i.status = 'pendiente' AND i.due_date < CURRENT_DATE) THEN i.amount ELSE 0 END), 0) / 100.0 as overdue_amount
         FROM clients c
-        LEFT JOIN invoices i ON c.id = i.client_id
-        WHERE c.id = ${id}
+        LEFT JOIN invoices i ON c.id = i.client_id AND i.user_id = ${uid}
+        WHERE c.id = ${id} AND c.user_id = ${uid}
         GROUP BY c.id
       `,
       sql<Invoice>`
@@ -369,7 +371,7 @@ export async function fetchClientDetailsById(id: string, userId?: string) {
           issue_date,
           due_date
         FROM invoices 
-        WHERE client_id = ${id} 
+        WHERE client_id = ${id} AND user_id = ${uid}
         ORDER BY issue_date DESC
       `,
     ]);
@@ -429,6 +431,7 @@ export async function fetchClientRevenueHistory(clientId: string, months: number
       LEFT JOIN invoices i ON date_trunc('month', i.issue_date) = m.month_start 
         AND i.client_id = ${clientId} 
         AND i.status = 'facturado'
+        AND i.user_id = ${uid}
       GROUP BY m.month_start
       ORDER BY m.month_start ASC
     `;
@@ -460,7 +463,7 @@ export async function fetchClientCalendarEvents(clientId: string, userId?: strin
         related_invoice_id,
         created_at
       FROM calendar_events
-      WHERE related_client_id = ${clientId}
+      WHERE related_client_id = ${clientId} AND user_id = ${uid}
       ORDER BY start_time ASC
     `;
 
@@ -599,7 +602,7 @@ export async function fetchMonthlyIncomeHistory(months: number = 12, userId?: st
         EXTRACT(MONTH FROM m.month_start) as month_num,
         COALESCE(SUM(i.amount), 0) / 100 as value
       FROM months m
-      LEFT JOIN invoices i ON date_trunc('month', i.issue_date) = m.month_start AND i.status = 'facturado' AND i.user_id = 
+      LEFT JOIN invoices i ON date_trunc('month', i.issue_date) = m.month_start AND i.status = 'facturado' AND i.user_id = ${uid}
       GROUP BY m.month_start
       ORDER BY m.month_start ASC
     `;
@@ -622,7 +625,8 @@ export async function fetchTopClients(year: number, month: number, limit: number
         COALESCE(SUM(i.amount), 0) / 100 as value
       FROM invoices i
       JOIN clients c ON i.client_id = c.id
-      WHERE EXTRACT(YEAR FROM i.issue_date) = ${year}
+      WHERE i.user_id = ${uid}
+        AND EXTRACT(YEAR FROM i.issue_date) = ${year}
         AND EXTRACT(MONTH FROM i.issue_date) = ${month}
         AND i.status = 'facturado'
       GROUP BY c.name
@@ -650,6 +654,7 @@ export async function fetchLastIssuedInvoices(limit: number = 5, userId?: string
         i.status
       FROM invoices i
       JOIN clients c ON i.client_id = c.id
+      WHERE i.user_id = ${uid}
       ORDER BY i.issue_date DESC
       LIMIT ${limit}
     `;
@@ -682,7 +687,7 @@ export async function fetchExpenseCategories(): Promise<Category[]> {
 export async function fetchExpenseById(id: string, userId?: string): Promise<Expense | undefined> {
   const uid = await resolveUserId(userId);
   try {
-    const data = await sql`SELECT * FROM expenses WHERE id =  AND user_id = ${id}`;
+    const data = await sql`SELECT * FROM expenses WHERE id = ${id} AND user_id = ${uid}`;
 
     if (data.rows.length === 0) return undefined;
 
@@ -712,7 +717,7 @@ export async function fetchExpenseById(id: string, userId?: string): Promise<Exp
 export async function fetchCards(userId?: string): Promise<Card[]> {
   const uid = await resolveUserId(userId);
   try {
-    const data = await sql<Card>`SELECT * FROM cards WHERE user_id =  ORDER BY name ASC`;
+    const data = await sql<Card>`SELECT * FROM cards WHERE user_id = ${uid} ORDER BY name ASC`;
     return data.rows;
   } catch (err) {
     console.error('Database Error:', err);
@@ -737,8 +742,9 @@ export async function fetchExpenseStats(year: number, month: number, userId?: st
         COALESCE(SUM(CASE WHEN entity_type = 'personal' THEN amount ELSE 0 END), 0) AS personal_amount,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_count
       FROM expenses
-      WHERE period = ${period} 
-         OR (period IS NULL AND EXTRACT(YEAR FROM date) = ${year} AND EXTRACT(MONTH FROM date) = ${month})
+      WHERE user_id = ${uid}
+        AND (period = ${period} 
+             OR (period IS NULL AND EXTRACT(YEAR FROM date) = ${year} AND EXTRACT(MONTH FROM date) = ${month}))
     `;
 
     const stats = data.rows[0];
@@ -771,8 +777,9 @@ export async function fetchExpenseCategoryStats(year: number, month: number, use
         COALESCE(SUM(e.amount), 0) AS total_amount
       FROM expenses e
       LEFT JOIN expense_categories ec ON e.category_id = ec.id
-      WHERE e.period = ${period} 
-         OR (e.period IS NULL AND EXTRACT(YEAR FROM e.date) = ${year} AND EXTRACT(MONTH FROM e.date) = ${month})
+      WHERE e.user_id = ${uid}
+        AND (e.period = ${period} 
+             OR (e.period IS NULL AND EXTRACT(YEAR FROM e.date) = ${year} AND EXTRACT(MONTH FROM e.date) = ${month}))
       GROUP BY ec.name
       ORDER BY total_amount DESC
     `;
@@ -804,7 +811,7 @@ export async function fetchMonthlyExpenseHistory(months: number = 6, userId?: st
           date_trunc('month', date) AS month_start,
           SUM(amount) AS amount
         FROM expenses
-        WHERE date >= date_trunc('month', CURRENT_DATE) - (INTERVAL '1 month' * ${months - 1})
+        WHERE user_id = ${uid} AND date >= date_trunc('month', CURRENT_DATE) - (INTERVAL '1 month' * ${months - 1})
         GROUP BY 1
       )
       SELECT 
@@ -840,7 +847,7 @@ export async function fetchOverdueInvoices(limit: number = 6, userId?: string) {
         i.status
       FROM invoices i
       JOIN clients c ON i.client_id = c.id
-      WHERE i.user_id =  AND ((i.status = 'vencido') OR (i.status = 'pendiente' AND i.due_date < NOW()))
+      WHERE i.user_id = ${uid} AND ((i.status = 'vencido') OR (i.status = 'pendiente' AND i.due_date < NOW()))
       ORDER BY i.due_date ASC
       LIMIT ${limit}
     `;
@@ -1107,10 +1114,12 @@ export async function fetchCardPaymentsDueForMonth(year: number, month: number, 
 SELECT
 COUNT(*) as total_count,
   COALESCE(SUM(amount), 0) as total_amount
-      FROM expense_installments
-      WHERE EXTRACT(YEAR FROM due_date) = ${year}
-        AND EXTRACT(MONTH FROM due_date) = ${month}
-        AND status = 'pending'
+      FROM expense_installments ei
+      JOIN expenses e ON ei.expense_id = e.id
+      WHERE e.user_id = ${uid}
+        AND EXTRACT(YEAR FROM ei.due_date) = ${year}
+        AND EXTRACT(MONTH FROM ei.due_date) = ${month}
+        AND ei.status = 'pending'
   `;
 
     const stats = data.rows[0];
@@ -1130,7 +1139,7 @@ export async function fetchPendingRecurringExpensesCount(userId?: string): Promi
     const data = await sql`
       SELECT COUNT(*) as count 
       FROM expense_templates 
-      WHERE next_due_date <= NOW() AND active = TRUE
+      WHERE user_id = ${uid} AND next_due_date <= NOW() AND active = TRUE
   `;
     return Number(data.rows[0].count);
   } catch (error) {
@@ -1148,22 +1157,25 @@ export async function fetchDashboardData(userId?: string) {
 
   try {
     // --- 1. Liquidez Real en Bancos y Billeteras (ARS y USD) ---
-    const bankLiquidityResult = await db.query(`
-      SELECT 
+    const bankLiquidityResult = await db.query(
+      `SELECT 
         COALESCE(SUM(balance) FILTER (WHERE currency = 'ARS'), 0) as total_ars,
         COALESCE(SUM(balance) FILTER (WHERE currency = 'USD'), 0) as total_usd
       FROM bank_accounts
-      WHERE is_active = TRUE
-    `);
+      WHERE is_active = TRUE AND user_id = $1`,
+      [uid]
+    );
     const totalBankARS = Number(bankLiquidityResult.rows[0].total_ars || 0) / 100;
     const totalBankUSD = Number(bankLiquidityResult.rows[0].total_usd || 0) / 100;
 
     // --- 2. Compromisos Inmediatos de Tarjetas (Pasivo Pendiente en ARS) ---
-    const pendingStatementsResult = await db.query(`
-      SELECT COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as total 
-      FROM card_statements 
-      WHERE status IN ('pending', 'partially_paid')
-    `);
+    const pendingStatementsResult = await db.query(
+      `SELECT COALESCE(SUM(cs.total_amount - COALESCE(cs.paid_amount, 0)), 0) as total 
+      FROM card_statements cs
+      JOIN cards c ON cs.card_id = c.id
+      WHERE cs.status IN ('pending', 'partially_paid') AND c.user_id = $1`,
+      [uid]
+    );
     const pendingCardDebt = Number(pendingStatementsResult.rows[0].total || 0) / 100;
 
     // --- 3. Flujo Operativo del Mes en Curso (KPIs del Período) ---
@@ -1171,9 +1183,10 @@ export async function fetchDashboardData(userId?: string) {
       `SELECT COALESCE(SUM(amount), 0) as total 
        FROM invoices 
        WHERE status IN ('paid', 'pagado', 'cobrado', 'facturado') 
-         AND EXTRACT(MONTH FROM issue_date) = $1 
-         AND EXTRACT(YEAR FROM issue_date) = $2`,
-      [currentMonth, currentYear]
+         AND user_id = $1
+         AND EXTRACT(MONTH FROM issue_date) = $2 
+         AND EXTRACT(YEAR FROM issue_date) = $3`,
+      [uid, currentMonth, currentYear]
     );
     const income = Number(incomeResult.rows[0].total || 0) / 100;
 
@@ -1182,28 +1195,31 @@ export async function fetchDashboardData(userId?: string) {
        FROM expenses 
        WHERE payment_method != 'credit_card'
          AND status = 'paid'
-         AND EXTRACT(MONTH FROM date) = $1 
-         AND EXTRACT(YEAR FROM date) = $2`,
-      [currentMonth, currentYear]
+         AND user_id = $1
+         AND EXTRACT(MONTH FROM date) = $2 
+         AND EXTRACT(YEAR FROM date) = $3`,
+      [uid, currentMonth, currentYear]
     );
     const paidExpenses = Number(paidExpensesResult.rows[0].total || 0) / 100;
 
     const expensesTotal = paidExpenses + pendingCardDebt;
 
     // --- 4. Gasto Promedio Mensual (Burn Rate) - Últimos 6 meses ---
-    const burnRateResult = await db.query(`
-      WITH monthly_stats AS (
+    const burnRateResult = await db.query(
+      `WITH monthly_stats AS (
         SELECT 
           date_trunc('month', date) as m, 
           SUM(amount) as total
         FROM expenses
         WHERE status = 'paid'
           AND payment_method != 'credit_card'
+          AND user_id = $1
           AND date >= date_trunc('month', CURRENT_DATE) - INTERVAL '6 months'
         GROUP BY 1
       )
-      SELECT COALESCE(AVG(total), 0) as avg_expense FROM monthly_stats
-    `);
+      SELECT COALESCE(AVG(total), 0) as avg_expense FROM monthly_stats`,
+      [uid]
+    );
     const burnRate = Number(burnRateResult.rows[0].avg_expense || 0) / 100;
 
     // --- 5. Cálculo Final de Runway y Dinero Disponible Real ---
@@ -1214,14 +1230,17 @@ export async function fetchDashboardData(userId?: string) {
 
     // A. Próximo Vencimiento de Resumen de Tarjeta
     let expenseStatus = null;
-    const nextCardPayment = await db.query(`
-      SELECT cs.id as statement_id, cs.due_date, (cs.total_amount - COALESCE(cs.paid_amount, 0)) as remaining_amount, cs.card_id, c.name as card_name
+    const nextCardPayment = await db.query(
+      `SELECT cs.id as statement_id, cs.due_date, (cs.total_amount - COALESCE(cs.paid_amount, 0)) as remaining_amount, cs.card_id, c.name as card_name
       FROM card_statements cs
       JOIN cards c ON cs.card_id = c.id
-      WHERE cs.status IN ('pending', 'partially_paid') AND cs.due_date >= CURRENT_DATE
+      WHERE cs.status IN ('pending', 'partially_paid') 
+        AND cs.due_date >= CURRENT_DATE 
+        AND c.user_id = $1
       ORDER BY cs.due_date ASC
-      LIMIT 1
-    `);
+      LIMIT 1`,
+      [uid]
+    );
 
     if (nextCardPayment.rows.length > 0) {
       const row = nextCardPayment.rows[0];
@@ -1235,13 +1254,16 @@ export async function fetchDashboardData(userId?: string) {
         label: `Resumen Tarjeta ${row.card_name}`,
       };
     } else {
-      const nextRecurring = await db.query(`
-        SELECT next_due_date, amount, concept
+      const nextRecurring = await db.query(
+        `SELECT next_due_date, amount, concept
         FROM expense_templates
-        WHERE next_due_date >= CURRENT_DATE AND active = TRUE
+        WHERE next_due_date >= CURRENT_DATE 
+          AND active = TRUE 
+          AND user_id = $1
         ORDER BY next_due_date ASC
-        LIMIT 1
-      `);
+        LIMIT 1`,
+        [uid]
+      );
       if (nextRecurring.rows.length > 0) {
         expenseStatus = {
           type: 'recurring',
@@ -1254,14 +1276,16 @@ export async function fetchDashboardData(userId?: string) {
 
     // B. Próximo Cobro de Factura (Incluye id y currency para el modal de cobro)
     let invoiceStatus = null;
-    const nextInvoiceDue = await db.query(`
-      SELECT invoices.id, invoices.due_date, invoices.amount, invoices.currency, clients.name
+    const nextInvoiceDue = await db.query(
+      `SELECT invoices.id, invoices.due_date, invoices.amount, invoices.currency, clients.name
       FROM invoices
       JOIN clients ON invoices.client_id = clients.id
       WHERE invoices.status IN ('pendiente', 'pending')
+        AND invoices.user_id = $1
       ORDER BY invoices.due_date ASC
-      LIMIT 1
-    `);
+      LIMIT 1`,
+      [uid]
+    );
 
     if (nextInvoiceDue.rows.length > 0) {
       const row = nextInvoiceDue.rows[0];
@@ -1277,11 +1301,13 @@ export async function fetchDashboardData(userId?: string) {
 
     // C. Agenda Semanal
     let agendaStatus = null;
-    const agendaEvents = await db.query(`
-      SELECT COUNT(*) as count, MIN(start_time) as next_event_time, MIN(title) as next_event_title
+    const agendaEvents = await db.query(
+      `SELECT COUNT(*) as count, MIN(start_time) as next_event_time, MIN(title) as next_event_title
       FROM calendar_events 
-      WHERE start_time BETWEEN NOW() AND NOW() + INTERVAL '7 days'
-    `);
+      WHERE user_id = $1 
+        AND start_time BETWEEN NOW() AND NOW() + INTERVAL '7 days'`,
+      [uid]
+    );
 
     agendaStatus = {
       count: Number(agendaEvents.rows[0].count),
@@ -1294,8 +1320,8 @@ export async function fetchDashboardData(userId?: string) {
     };
 
     // --- 7. Histórico 12 Meses para Gráfico de Líneas ---
-    const chartDataResult = await db.query(`
-      WITH months AS (
+    const chartDataResult = await db.query(
+      `WITH months AS (
         SELECT generate_series(
           date_trunc('month', CURRENT_DATE) - INTERVAL '11 months',
           date_trunc('month', CURRENT_DATE),
@@ -1308,6 +1334,7 @@ export async function fetchDashboardData(userId?: string) {
           SUM(amount) AS total
         FROM invoices
         WHERE status IN ('paid', 'pagado', 'cobrado', 'facturado')
+          AND user_id = $1
           AND issue_date >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
         GROUP BY 1
       ),
@@ -1318,6 +1345,7 @@ export async function fetchDashboardData(userId?: string) {
         FROM expenses
         WHERE status = 'paid'
           AND payment_method != 'credit_card'
+          AND user_id = $1
           AND date >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
         GROUP BY 1
       )
@@ -1328,8 +1356,9 @@ export async function fetchDashboardData(userId?: string) {
       FROM months m
       LEFT JOIN monthly_incomes inc ON m.m_date = inc.m_date
       LEFT JOIN monthly_expenses exp ON m.m_date = exp.m_date
-      ORDER BY m.m_date ASC
-    `);
+      ORDER BY m.m_date ASC`,
+      [uid]
+    );
 
     const chartData = chartDataResult.rows.map((r) => ({
       name: r.month_label.toUpperCase(),
@@ -1339,17 +1368,22 @@ export async function fetchDashboardData(userId?: string) {
     }));
 
     // --- 8. Actividad Reciente Normalizada ---
-    const recentActivityResult = await db.query(`
-      (SELECT 'invoice' as type, id::text, amount, status, issue_date as date, 
+    const recentActivityResult = await db.query(
+      `(SELECT 'invoice' as type, id::text, amount, status, issue_date as date, 
         (SELECT name FROM clients WHERE id = invoices.client_id) as description, 
         'Ingreso' as category
-       FROM invoices ORDER BY issue_date DESC LIMIT 5)
+       FROM invoices 
+       WHERE user_id = $1 
+       ORDER BY issue_date DESC LIMIT 5)
       UNION ALL
       (SELECT 'expense' as type, id::text, amount, status, date, concept as description,
         (SELECT name FROM expense_categories WHERE id = expenses.category_id) as category
-       FROM expenses ORDER BY date DESC LIMIT 5)
-      ORDER BY date DESC LIMIT 5
-    `);
+       FROM expenses 
+       WHERE user_id = $1 
+       ORDER BY date DESC LIMIT 5)
+      ORDER BY date DESC LIMIT 5`,
+      [uid]
+    );
 
     const recentActivity = recentActivityResult.rows.map((row) => ({
       ...row,
@@ -1396,7 +1430,7 @@ export async function fetchUpcomingRecurringExpenses(limit: number = 5, userId?:
       FROM expense_templates et
       LEFT JOIN vendors v ON et.vendor_id = v.id
       LEFT JOIN expense_categories ec ON et.category_id = ec.id
-      WHERE et.user_id =  AND et.next_due_date > NOW() AND et.active = TRUE
+      WHERE et.user_id = ${uid} AND et.next_due_date > NOW() AND et.active = TRUE
       ORDER BY et.next_due_date ASC
       LIMIT ${limit}
     `;
@@ -1439,6 +1473,7 @@ export async function fetchGlobalCardActivity(limit: number = 6, userId?: string
         c.color AS card_color
       FROM expenses e
       JOIN cards c ON e.card_id = c.id
+      WHERE e.user_id = ${uid}
       ORDER BY e.date DESC, e.id DESC
       LIMIT ${limit}
     `;
@@ -1474,7 +1509,7 @@ export async function fetchCardSpendingDistribution(year: number, month: number,
       JOIN card_statements cs 
         ON c.id = cs.card_id 
        AND cs.statement_month = ${periodDate}::date
-      WHERE c.user_id =  AND cs.total_amount > 0
+      WHERE c.user_id = ${uid} AND cs.total_amount > 0
       ORDER BY value DESC
     `;
 
@@ -1512,6 +1547,7 @@ export async function fetchCardsWithMonthlyStatement(year: number, month: number
       LEFT JOIN card_statements cs 
         ON c.id = cs.card_id 
        AND cs.statement_month = ${periodDate}::date
+      WHERE c.user_id = ${uid}
       ORDER BY c.name ASC
     `;
 
@@ -1608,7 +1644,7 @@ export async function fetchBankAccounts(userId?: string): Promise<BankAccount[]>
         created_at, 
         updated_at
       FROM bank_accounts
-      WHERE is_active = TRUE
+      WHERE is_active = TRUE AND user_id = ${uid}
       ORDER BY currency ASC, balance DESC
     `;
 
@@ -1638,7 +1674,7 @@ export async function fetchBankLiquiditySummary(userId?: string) {
         COALESCE(SUM(balance), 0) as total_balance,
         COUNT(id) as total_accounts
       FROM bank_accounts
-      WHERE is_active = TRUE
+      WHERE is_active = TRUE AND user_id = ${uid}
       GROUP BY currency
     `;
 
@@ -1678,9 +1714,10 @@ export async function fetchBankTransfers(userId?: string) {
       FROM bank_transfers bt
       JOIN bank_accounts fa ON bt.from_account_id = fa.id
       JOIN bank_accounts ta ON bt.to_account_id = ta.id
+      WHERE fa.user_id = $1
       ORDER BY bt.created_at DESC
       LIMIT 25
-    `);
+    `, [uid]);
 
     return result.rows.map((row) => ({
       id: row.id,
@@ -1719,7 +1756,8 @@ export async function fetchTodayPendingEvents(userId?: string): Promise<Calendar
       FROM calendar_events e
       LEFT JOIN clients c ON e.related_client_id = c.id
       WHERE 
-        DATE(e.start_time) = CURRENT_DATE
+        e.user_id = ${uid}
+        AND DATE(e.start_time) = CURRENT_DATE
         AND e.status = 'pending'
       ORDER BY e.start_time ASC
     `;
@@ -1765,10 +1803,10 @@ export async function fetchUpcomingDues(userId?: string): Promise<UpcomingDueIte
         END as is_overdue
       FROM invoices i
       JOIN clients c ON i.client_id = c.id
-      WHERE i.status IN ('pendiente', 'vencido')
+      WHERE i.user_id = $1 AND i.status IN ('pendiente', 'vencido')
       ORDER BY i.due_date ASC
       LIMIT 3
-    `);
+    `, [uid]);
 
     // 2. Pagos de tarjetas de crédito más cercanos
     const cardsResult = await db.query(`
@@ -1784,10 +1822,10 @@ export async function fetchUpcomingDues(userId?: string): Promise<UpcomingDueIte
         END as is_overdue
       FROM card_statements cs
       JOIN cards c ON cs.card_id = c.id
-      WHERE cs.status IN ('pending', 'partially_paid')
+      WHERE c.user_id = $1 AND cs.status IN ('pending', 'partially_paid')
       ORDER BY cs.due_date ASC
       LIMIT 3
-    `);
+    `, [uid]);
 
     const items: UpcomingDueItem[] = [];
 
