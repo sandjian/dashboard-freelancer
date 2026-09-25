@@ -878,12 +878,13 @@ export async function fetchExpensesPages(
   const uid = await resolveUserId(userId);
   const searchQuery = `%${query}%`;
   try {
+    const queryParams: unknown[] = [year, month, searchQuery, uid];
     let whereClause = `
         WHERE EXTRACT(YEAR FROM expenses.date) = $1 
           AND EXTRACT(MONTH FROM expenses.date) = $2
           AND (expenses.concept ILIKE $3 OR v.name ILIKE $3 OR ec.name ILIKE $3)
+          AND expenses.user_id = $4
       `;
-    const queryParams: unknown[] = [year, month, searchQuery, uid];
 
     if (categoryId && categoryId !== 'all') {
       queryParams.push(categoryId);
@@ -923,18 +924,21 @@ export async function fetchFilteredExpenses(
   month: number,
   categoryId: string | null,
   status: string | null,
-  cardId: string | null = null
+  cardId: string | null = null,
+  userId?: string
 ): Promise<ExpenseWithVendor[]> {
+  const uid = await resolveUserId(userId);
   const offset = (currentPage - 1) * ITEMS_PER_PAGE_EXPENSES;
   const searchQuery = `%${query}%`;
 
   try {
-    const queryParams: unknown[] = [year, month, searchQuery];
+    const queryParams: unknown[] = [year, month, searchQuery, uid];
     const whereConditions = [
       `EXTRACT(YEAR FROM expenses.date) = $1`,
       `EXTRACT(MONTH FROM expenses.date) = $2`,
       `(expenses.concept ILIKE $3 OR v.name ILIKE $3 OR ec.name ILIKE $3)`,
-      `expenses.payment_method != 'credit_card'`
+      `expenses.payment_method != 'credit_card'`,
+      `expenses.user_id = $4`
     ];
 
     if (categoryId && categoryId !== 'all') {
@@ -986,33 +990,18 @@ export async function fetchFilteredExpenses(
     // AGREGAR UNION PARA RESÚMENES O DETALLE DE TARJETA
     if (cardId && cardId !== 'all') {
       // CASE A: DRILL-DOWN (Detail View) - Individual INSTALLMENTS
-
-      // Filter logic for installments needs to match the params
-      // Since specific Installments have 'pending' status, we check due_date for overdue
       let installWhere = `
           WHERE e.card_id = $${queryParams.length} 
             AND EXTRACT(YEAR FROM ei.due_date) = $1
             AND EXTRACT(MONTH FROM ei.due_date) = $2
             AND (e.concept ILIKE $3 OR v.name ILIKE $3 OR ec.name ILIKE $3)
+            AND e.user_id = $4
       `;
 
       if (status && status !== 'all') {
         if (status === 'overdue') {
           installWhere += ` AND ei.status = 'pending' AND ei.due_date < CURRENT_DATE`;
         } else {
-          // We need to use the param index for status if it was added
-          // But queryParams order matters. Status was added before cardId if present.
-          // However, for this UNION query, we might need to be careful with param indices.
-          // Actually, queryParams layout: [year, month, search, (cat?), (status?), (cardId?)]
-          // We are reusing queryParams.
-          // If status is present, it is at index 4 or 5.
-          // Let's rely on value injection or finding the index.
-          // Easier: Reconstruct logic or use named params (not supported directly).
-          // Safe bet: duplicate logic using queryParams array length or known indices.
-          // But since I'm appending to queryStr, keeping `queryParams` consistent is key.
-          // Status corresponds to the param added in main block.
-          // If status != 'overdue', it was pushed.
-          // We need to find its index.
           const statusIndex = queryParams.indexOf(status);
           if (statusIndex !== -1) {
             installWhere += ` AND ei.status = $${statusIndex + 1}`;
@@ -1051,7 +1040,6 @@ export async function fetchFilteredExpenses(
 
     } else {
       // CASE B: GENERAL VIEW (Summaries) - One row per Card
-
       const summaryQuery = `
          UNION ALL
          SELECT
@@ -1076,6 +1064,7 @@ export async function fetchFilteredExpenses(
            AND EXTRACT(MONTH FROM ei.due_date) = $2
            AND ei.status = 'pending'
            AND (c.name ILIKE $3 OR 'Resumen' ILIKE $3)
+           AND e.user_id = $4
          GROUP BY c.id, c.name, c.due_day
        `;
 
@@ -1111,16 +1100,16 @@ export async function fetchCardPaymentsDueForMonth(year: number, month: number, 
   const uid = await resolveUserId(userId);
   try {
     const data = await sql`
-SELECT
-COUNT(*) as total_count,
-  COALESCE(SUM(amount), 0) as total_amount
+      SELECT
+        COUNT(*) as total_count,
+        COALESCE(SUM(ei.amount), 0) as total_amount
       FROM expense_installments ei
       JOIN expenses e ON ei.expense_id = e.id
       WHERE e.user_id = ${uid}
         AND EXTRACT(YEAR FROM ei.due_date) = ${year}
         AND EXTRACT(MONTH FROM ei.due_date) = ${month}
         AND ei.status = 'pending'
-  `;
+    `;
 
     const stats = data.rows[0];
     return {
