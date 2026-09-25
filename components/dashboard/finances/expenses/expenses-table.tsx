@@ -2,6 +2,11 @@ import { fetchFilteredExpenses, fetchExpensesPages } from '@/lib/data';
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn, formatCurrency } from '@/lib/utils';
 import { ExpenseActions } from './expenses-actions';
 import Pagination from '@/components/ui/pagination';
@@ -121,25 +126,55 @@ export async function ExpensesTable({
                         </span>
                       )}
 
-                      {/* Badge Destino: Personal vs Negocio con iconos */}
+                      {/* Badge Destino: Personal vs Negocio con iconos y Tooltip */}
                       {expense.entity_type === 'business' ? (
-                        <Badge variant="outline" title="Gasto de Negocio" className="border-border text-foreground/80 bg-muted/30 text-[10px] px-1.5 py-0.5 font-mono flex items-center gap-1">
-                          <Building2 className="w-3 h-3 text-foreground/70" />
-                          <span className="hidden sm:inline">Negocio</span>
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="border-border text-foreground/80 bg-muted/30 p-1 font-mono flex items-center justify-center cursor-default hover:bg-muted/50 transition-colors"
+                            >
+                              <Building2 className="w-3 h-3 text-foreground/70" />
+                              <span className="sr-only">Negocio</span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            Gasto de Negocio
+                          </TooltipContent>
+                        </Tooltip>
                       ) : (
-                        <Badge variant="outline" title="Gasto Personal" className="border-border text-muted-foreground bg-muted/20 text-[10px] px-1.5 py-0.5 font-mono flex items-center gap-1">
-                          <User className="w-3 h-3 text-muted-foreground" />
-                          <span className="hidden sm:inline">Personal</span>
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="border-border text-muted-foreground bg-muted/20 p-1 font-mono flex items-center justify-center cursor-default hover:bg-muted/40 transition-colors"
+                            >
+                              <User className="w-3 h-3 text-muted-foreground" />
+                              <span className="sr-only">Personal</span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            Gasto Personal
+                          </TooltipContent>
+                        </Tooltip>
                       )}
 
-                      {/* Badge Fijo / Plantilla con icono de blanco (Target) */}
+                      {/* Badge Fijo / Plantilla con icono de blanco (Target) y Tooltip */}
                       {expense.template_id && (
-                        <Badge variant="outline" title="Gasto Fijo" className="border-border text-muted-foreground bg-muted/40 text-[10px] px-1.5 py-0.5 shadow-none font-mono flex items-center gap-1">
-                          <Target className="w-3 h-3 text-muted-foreground" />
-                          <span className="hidden sm:inline">Fijo</span>
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="border-border text-muted-foreground bg-muted/40 p-1 shadow-none font-mono flex items-center justify-center cursor-default hover:bg-muted/60 transition-colors"
+                            >
+                              <Target className="w-3 h-3 text-muted-foreground" />
+                              <span className="sr-only">Fijo</span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            Gasto Fijo
+                          </TooltipContent>
+                        </Tooltip>
                       )}
 
                       {isSummary && (
