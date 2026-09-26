@@ -1,4 +1,5 @@
 import { requireUser } from '@/lib/auth-guard';
+import { getTranslations } from 'next-intl/server';
 import {
   fetchExpenseStats,
   fetchVendors,
@@ -64,6 +65,7 @@ export default async function ExpensesPage({
     fetchCards(),
     fetchPendingRecurringExpensesCount(),
     fetchMonthlyExpenseHistory(12), // Last 12 months
+    getTranslations('Expenses'),
   ]);
 
   const [
@@ -73,7 +75,8 @@ export default async function ExpensesPage({
     categories,
     cards,
     pendingRecurrencesCount,
-    historyData // Added
+    historyData,
+    t,
   ] = results;
 
   const totalAmount = expenseStats.totalAmount || 1;
@@ -92,13 +95,13 @@ export default async function ExpensesPage({
           <div className="space-y-1.5 w-full xl:w-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
               <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
-              <span>Gestión de Salidas</span>
+              <span>{t('badge')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground/80 font-sans">
-              Gastos
+              {t('heroTitle')}
             </h1>
             <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              Gestiona y controla tus salidas de dinero mensuales.
+              {t('heroDescription')}
             </p>
           </div>
 
@@ -136,29 +139,29 @@ export default async function ExpensesPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 pt-6 sm:pt-8 relative z-10">
           {/* KPI 1: Gasto Total */}
           <TranslucentImpactCard
-            title="Gasto Total"
+            title={t('totalExpense')}
             value={formatCurrency(expenseStats.totalAmount)}
-            subtitle={`Personal: ${formatCurrency(expenseStats.personalAmount)} • Negocio: ${formatCurrency(expenseStats.businessAmount)}`}
+            subtitle={t('personalVsBusiness', { personal: formatCurrency(expenseStats.personalAmount), business: formatCurrency(expenseStats.businessAmount) })}
             icon={BanknoteIcon}
-            trend={month === new Date().getMonth() + 1 ? "Mes actual" : "Periodo consultado"}
+            trend={month === new Date().getMonth() + 1 ? t('currentMonth') : t('queriedPeriod')}
           />
 
           {/* KPI 2: Piso Fijo Mensual */}
           <TranslucentImpactCard
-            title="Piso Fijo Mensual"
+            title={t('monthlyFixedFloor')}
             value={formatCurrency(expenseStats.recurringAmount)}
-            subtitle={`${Math.round(recurringPercentage || 0)}% costos fijos`}
+            subtitle={t('fixedCostPercentage', { percentage: Math.round(recurringPercentage || 0) })}
             icon={RepeatIcon}
-            trend="Recurrente"
+            trend={t('recurring')}
           />
 
           {/* KPI 3: Pendiente de Pago */}
           <TranslucentImpactCard
-            title="Pendiente de Pago"
+            title={t('pendingPayment')}
             value={formatCurrency(expenseStats.pendingAmount)}
-            subtitle={`${expenseStats.pendingCount} salidas por abonar`}
+            subtitle={t('pendingOutflows', { count: expenseStats.pendingCount })}
             icon={ClockIcon}
-            trend={expenseStats.pendingAmount > 0 ? "Por vencer" : "Al día"}
+            trend={expenseStats.pendingAmount > 0 ? t('dueSoon') : t('upToDate')}
           />
         </div>
       </div>
@@ -173,7 +176,7 @@ export default async function ExpensesPage({
             {/* Integrated Header Toolbar */}
             <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 p-3.5 sm:p-5 border-b border-border bg-muted/20">
               <div className="w-full md:max-w-xs">
-                <Search placeholder="Buscar concepto o proveedor..." />
+                <Search placeholder={t('searchPlaceholder')} />
               </div>
               <div className="w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
                 <ExpenseStatusButtons />
@@ -202,7 +205,7 @@ export default async function ExpensesPage({
               <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <h3 className="text-xs sm:text-sm font-semibold text-foreground tracking-tight">Historial de Gastos (Últimos 12 meses)</h3>
+              <h3 className="text-xs sm:text-sm font-semibold text-foreground tracking-tight">{t('expenseHistoryTitle')}</h3>
             </div>
             <div className="h-[280px] sm:h-[340px] md:h-[370px] w-full">
               <ExpensesHistoryChart data={historyData as unknown as HistoryData[]} />

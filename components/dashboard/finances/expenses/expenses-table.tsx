@@ -1,5 +1,6 @@
 import { fetchFilteredExpenses, fetchExpensesPages } from '@/lib/data';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -40,17 +41,18 @@ export async function ExpensesTable({
   status: string | null;
   cardId?: string | null;
 }) {
-  const [expenses, totalPages] = await Promise.all([
+  const [expenses, totalPages, t] = await Promise.all([
     fetchFilteredExpenses(query, currentPage, year, month, categoryId, status, cardId),
     fetchExpensesPages(query, year, month, categoryId, status, cardId),
+    getTranslations('Expenses'),
   ]);
 
   if (expenses.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
         <Clock className="w-8 h-8 text-muted-foreground/40 mb-1" />
-        <p className="font-medium text-foreground">No se encontraron movimientos</p>
-        <p className="text-xs">No hay gastos registrados que coincidan con los filtros aplicados.</p>
+        <p className="font-medium text-foreground">{t('noExpenses')}</p>
+        <p className="text-xs">{t('noExpensesDescription')}</p>
       </div>
     );
   }
@@ -65,22 +67,22 @@ export async function ExpensesTable({
           <TableHeader className="bg-muted/10 sticky top-0 z-10 border-b border-border/30 backdrop-blur-sm">
             <TableRow className="border-border/30 hover:bg-transparent">
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6 w-[85px]">
-                Fecha
+                {t('tableDate')}
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Concepto & Destino
+                {t('tableConcept')}
               </TableHead>
               <TableHead className="hidden sm:table-cell text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Categoría
+                {t('tableCategory')}
               </TableHead>
               <TableHead className="hidden md:table-cell text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Método
+                {t('tableMethod')}
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Estado
+                {t('tableStatus')}
               </TableHead>
               <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pr-3 sm:pr-6">
-                Monto
+                {t('tableAmount')}
               </TableHead>
               <TableHead className="w-[44px] py-3.5 pr-3 sm:pr-6 text-right">
                 <span className="sr-only">Acciones</span>
@@ -135,11 +137,11 @@ export async function ExpensesTable({
                               className="border-border text-foreground/80 bg-muted/30 p-1 font-mono flex items-center justify-center cursor-default hover:bg-muted/50 transition-colors"
                             >
                               <Building2 className="w-3 h-3 text-foreground/70" />
-                              <span className="sr-only">Negocio</span>
+                              <span className="sr-only">{t('businessExpense')}</span>
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent side="top">
-                            Gasto de Negocio
+                            {t('businessExpense')}
                           </TooltipContent>
                         </Tooltip>
                       ) : (
@@ -150,11 +152,11 @@ export async function ExpensesTable({
                               className="border-border text-muted-foreground bg-muted/20 p-1 font-mono flex items-center justify-center cursor-default hover:bg-muted/40 transition-colors"
                             >
                               <User className="w-3 h-3 text-muted-foreground" />
-                              <span className="sr-only">Personal</span>
+                              <span className="sr-only">{t('personalExpense')}</span>
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent side="top">
-                            Gasto Personal
+                            {t('personalExpense')}
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -168,18 +170,18 @@ export async function ExpensesTable({
                               className="border-border text-muted-foreground bg-muted/40 p-1 shadow-none font-mono flex items-center justify-center cursor-default hover:bg-muted/60 transition-colors"
                             >
                               <Target className="w-3 h-3 text-muted-foreground" />
-                              <span className="sr-only">Fijo</span>
+                              <span className="sr-only">{t('fixedExpense')}</span>
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent side="top">
-                            Gasto Fijo
+                            {t('fixedExpense')}
                           </TooltipContent>
                         </Tooltip>
                       )}
 
                       {isSummary && (
                         <Badge variant="outline" className="border-border text-muted-foreground bg-muted/40 text-[10px] px-1.5 py-0.5 shadow-none font-mono">
-                          Resumen
+                          {t('summary')}
                         </Badge>
                       )}
                     </div>
@@ -201,10 +203,10 @@ export async function ExpensesTable({
                       {expense.payment_method === 'transfer' && <ArrowRightLeft className="w-3.5 h-3.5 text-muted-foreground" />}
 
                       <span className="capitalize text-xs font-mono">
-                        {expense.payment_method === 'credit_card' ? 'Crédito' :
-                          expense.payment_method === 'debit_card' ? 'Débito' :
-                            expense.payment_method === 'transfer' ? 'Transf.' :
-                              'Efectivo'}
+                        {expense.payment_method === 'credit_card' ? t('methodCredit') :
+                          expense.payment_method === 'debit_card' ? t('methodDebit') :
+                            expense.payment_method === 'transfer' ? t('methodTransfer') :
+                              t('methodCash')}
                       </span>
                     </div>
                   </TableCell>
@@ -239,7 +241,7 @@ export async function ExpensesTable({
                           )}
                         />
                         <span className="translate-y-[-0.5px]">
-                          {isPaid ? 'Pagado' : isOverdue ? 'Vencido' : 'Pendiente'}
+                          {isPaid ? t('statusPaid') : isOverdue ? t('statusOverdue') : t('statusPending')}
                         </span>
                       </span>
                     </div>

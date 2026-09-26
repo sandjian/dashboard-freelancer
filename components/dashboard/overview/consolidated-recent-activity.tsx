@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
+import { getDateFnsLocale } from "@/lib/date-locale";
 import {
     Table,
     TableBody,
@@ -19,6 +20,10 @@ interface ConsolidatedRecentActivityProps {
 }
 
 export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActivityProps) {
+    const locale = useLocale();
+    const dateLocale = getDateFnsLocale(locale);
+    const t = useTranslations("Overview");
+    const tCommon = useTranslations("Common");
     const items = activity.slice(0, 6);
 
     return (
@@ -30,8 +35,8 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                         <History className="w-4 h-4" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-foreground tracking-tight">Actividad Reciente Consolidada</h3>
-                        <p className="text-xs text-muted-foreground">Últimos movimientos de ingresos y gastos</p>
+                        <h3 className="text-sm font-semibold text-foreground tracking-tight">{t("consolidatedActivityTitle")}</h3>
+                        <p className="text-xs text-muted-foreground">{t("consolidatedActivitySubtitle")}</p>
                     </div>
                 </div>
 
@@ -39,7 +44,7 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                     href="/dashboard/finances/expenses"
                     className="text-xs font-semibold text-foreground hover:underline transition-all flex items-center gap-1"
                 >
-                    <span>Ver historial completo</span>
+                    <span>{t("viewFullHistory")}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
             </div>
@@ -47,7 +52,7 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
             {/* Table Area */}
             {items.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground text-xs">
-                    No se registran movimientos recientes.
+                    {t("noRecentActivity")}
                 </div>
             ) : (
                 <div className="overflow-x-auto">
@@ -55,10 +60,10 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                         <TableHeader>
                             <TableRow className="border-border hover:bg-transparent bg-muted/10">
                                 <TableHead className="w-[48px]"></TableHead>
-                                <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Concepto</TableHead>
-                                <TableHead className="hidden sm:table-cell text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo / Categoría</TableHead>
-                                <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha</TableHead>
-                                <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monto</TableHead>
+                                <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("concept")}</TableHead>
+                                <TableHead className="hidden sm:table-cell text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("typeCategory")}</TableHead>
+                                <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tCommon("date")}</TableHead>
+                                <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">{tCommon("amount")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -85,7 +90,7 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                                         </TableCell>
 
                                         <TableCell className="py-3 font-medium text-xs text-foreground max-w-[200px] truncate">
-                                            {item.description || "Sin descripción"}
+                                            {item.description || tCommon("withoutDescription")}
                                         </TableCell>
 
                                         <TableCell className="py-3 hidden sm:table-cell">
@@ -93,12 +98,12 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
                                                 variant="outline"
                                                 className="text-[10px] font-normal px-2 py-0.5 border-border bg-card text-muted-foreground"
                                             >
-                                                {item.category || (isInvoice ? "Ingreso" : "Gasto")}
+                                                {item.category || (isInvoice ? tCommon("income") : tCommon("expense"))}
                                             </Badge>
                                         </TableCell>
 
                                         <TableCell className="py-3 text-xs font-mono text-muted-foreground">
-                                            {format(new Date(item.date), "dd MMM yyyy", { locale: es })}
+                                            {format(new Date(item.date), "dd MMM yyyy", { locale: dateLocale })}
                                         </TableCell>
 
                                         <TableCell className="py-3 text-right font-mono text-xs font-semibold text-foreground pr-4">

@@ -4,11 +4,13 @@ import { CalendarClock, Zap, PieChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RecurringExpensesList } from "./recurring-expenses-list";
 import { ExpensesCategoryChart } from "./expenses-category-chart";
+import { getTranslations } from "next-intl/server";
 
 export async function SideInsightsPanel({ year, month }: { year: number; month: number }) {
-    const [recurringData, categoryStats] = await Promise.all([
+    const [recurringData, categoryStats, t] = await Promise.all([
         fetchUpcomingRecurringExpenses(5),
         fetchExpenseCategoryStats(year, month),
+        getTranslations('Expenses'),
     ]);
 
     // Ensure data matches the expected type
@@ -27,13 +29,13 @@ export async function SideInsightsPanel({ year, month }: { year: number; month: 
                     <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                         <Zap className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Alertas</h3>
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('alertsTitle')}</h3>
                 </div>
 
                 <div className="space-y-2">
                     <div className="p-3.5 rounded-xl bg-muted/40 border border-border">
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                            Recuerda revisar tus pagos de tarjeta antes del cierre (día 25).
+                            {t('alertsCardReminder')}
                         </p>
                     </div>
                 </div>
@@ -45,7 +47,7 @@ export async function SideInsightsPanel({ year, month }: { year: number; month: 
                     <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                         <PieChart className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Distribución</h3>
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('distributionTitle')}</h3>
                 </div>
                 <div className="flex-1 min-h-0">
                     <ExpensesCategoryChart data={categoryStats} />
@@ -58,11 +60,11 @@ export async function SideInsightsPanel({ year, month }: { year: number; month: 
                     <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                         <CalendarClock className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Próximos</h3>
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('upcomingTitle')}</h3>
                 </div>
 
                 {recurring.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No hay gastos recurrentes activos.</p>
+                    <p className="text-xs text-muted-foreground">{t('noActiveRecurring')}</p>
                 ) : (
                     <RecurringExpensesList items={recurring} />
                 )}

@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip, YAxis, CartesianGrid } from "recharts"
 import { formatCurrency } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 export interface HistoryData {
     name: string;        // Month name (e.g. "Ene")
@@ -12,7 +13,7 @@ export interface HistoryData {
 import { TooltipProps } from "recharts";
 import { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+const CustomTooltip = ({ active, payload, label, totalLabel }: TooltipProps<ValueType, NameType> & { totalLabel?: string }) => {
     if (active && payload && payload.length) {
         return (
             <div className="rounded-[var(--radius-md)] border border-border bg-popover/95 dark:bg-popover/90 p-3 shadow-lg backdrop-blur-md">
@@ -21,7 +22,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
                     <span className="text-sm font-bold font-mono text-foreground">
                         {formatCurrency(Number(payload[0].value))}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Gasto Total</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{totalLabel || 'Gasto Total'}</span>
                 </div>
             </div>
         )
@@ -30,10 +31,12 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 }
 
 export function ExpensesHistoryChart({ data }: { data: HistoryData[] }) {
+    const t = useTranslations('Expenses');
+
     if (!data || data.length === 0) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <p className="text-sm text-muted-foreground">No hay datos históricos disponibles.</p>
+                <p className="text-sm text-muted-foreground">{t('noHistoryData')}</p>
             </div>
         )
     }
@@ -58,7 +61,7 @@ export function ExpensesHistoryChart({ data }: { data: HistoryData[] }) {
                     domain={[0, 'auto']}
                 />
                 <Tooltip
-                    content={<CustomTooltip />}
+                    content={<CustomTooltip totalLabel={t('totalExpense')} />}
                     cursor={{
                         fill: 'var(--muted)',
                         opacity: 0.35,

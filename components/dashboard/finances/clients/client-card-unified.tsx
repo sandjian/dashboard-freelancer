@@ -21,12 +21,14 @@ import {
 import { EditClientModal } from "./edit-client-modal";
 import { DeleteClientDialog } from "./delete-client-dialog";
 import type { ClientWithStats } from "@/lib/definitions";
+import { useTranslations } from "next-intl";
 
 interface ClientCardUnifiedProps {
   client: ClientWithStats;
 }
 
 export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
+  const t = useTranslations('Clients');
   const avatarInitials = client.name
     .split(" ")
     .filter(Boolean)
@@ -80,7 +82,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate mt-0.5">
                 <Building2 className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{client.brand || "Cliente Directo"}</span>
+                <span className="truncate">{client.brand || t('directClient')}</span>
               </div>
             </div>
           </div>
@@ -92,14 +94,14 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
                 <button
                   type="button"
                   className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted border border-border/60 transition-colors cursor-pointer outline-none shadow-xs"
-                  aria-label="Más opciones"
+                  aria-label={t('moreOptions')}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-card border-border text-foreground">
                 <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                  Acciones
+                  {t('actions')}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -107,7 +109,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
                     href={`/dashboard/finances/invoices/create?client_id=${client.id}`}
                     className="cursor-pointer gap-2"
                   >
-                    <span>Nueva Factura</span>
+                    <span>{t('newInvoice')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -115,7 +117,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
                     href={`/dashboard/finances/clients/${client.id}`}
                     className="cursor-pointer gap-2"
                   >
-                    <span>Ver Perfil</span>
+                    <span>{t('viewProfile')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -130,7 +132,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
                     }}
                     trigger={
                       <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-muted text-foreground w-full">
-                        Editar Datos
+                        {t('editData')}
                       </div>
                     }
                   />
@@ -141,7 +143,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
                     clientName={client.name}
                     trigger={
                       <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-destructive/10 text-destructive w-full">
-                        Eliminar Cliente
+                        {t('deleteClient')}
                       </div>
                     }
                   />
@@ -156,7 +158,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
           {/* 1. Total Facturado */}
           <div className="flex flex-col">
             <span className="text-[10px] uppercase font-semibold tracking-wider text-secondary-foreground/75 dark:text-background/75 block">
-              Facturado
+              {t('billedLabel')}
             </span>
             <span className="text-xs sm:text-sm font-semibold font-mono text-secondary-foreground dark:text-neutral-700/80 truncate mt-1">
               {formatCurrency(client.total_billed || client.total_revenue || 0)}
@@ -166,26 +168,26 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
           {/* 2. Facturas Emitidas */}
           <div className="flex flex-col border-x border-secondary-foreground/20 dark:border-background/20 px-2 sm:px-2.5">
             <span className="text-[10px] uppercase font-semibold tracking-wider text-secondary-foreground/75 dark:text-background/75 block">
-              Emitidas
+              {t('emittedLabel')}
             </span>
             <span className="text-xs sm:text-sm font-semibold text-secondary-foreground dark:text-neutral-700/80 truncate mt-1">
-              {client.total_invoices} {client.total_invoices === 1 ? "factura" : "facturas"}
+              {client.total_invoices} {client.total_invoices === 1 ? t('invoiceCountSingular') : t('invoiceCountPlural')}
             </span>
           </div>
 
           {/* 3. Monto Adeudado / Saldo */}
           <div className="flex flex-col pl-1 sm:pl-1.5">
             <span className="text-[10px] uppercase font-semibold tracking-wider text-secondary-foreground/75 dark:text-background/75 block">
-              Adeudado
+              {t('owedLabel')}
             </span>
             <span
               className="text-xs sm:text-sm font-semibold font-mono text-secondary-foreground dark:text-neutral-700/80 truncate mt-1"
               title={
                 isOverdue
-                  ? `Mora: ${formatCurrency(client.overdue_amount)}`
+                  ? `${t('overdueLabel')}: ${formatCurrency(client.overdue_amount)}`
                   : hasPending
-                    ? `Pendiente: ${formatCurrency(client.pending_amount)}`
-                    : "Al día (Sin deuda)"
+                    ? `${t('pendingLabel')}: ${formatCurrency(client.pending_amount)}`
+                    : t('noDebt')
               }
             >
               {debtAmount > 0 ? formatCurrency(debtAmount) : "$0"}
@@ -203,7 +205,7 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
           className="h-9 flex-1 rounded-lg text-xs font-semibold border-neutral-300 dark:border-neutral-700 bg-background hover:bg-muted text-neutral-900 dark:text-neutral-100 transition-colors shadow-2xs"
         >
           <Link href={`/dashboard/finances/clients/${client.id}`} className="text-center justify-center">
-            Ver Perfil
+            {t('viewProfile')}
           </Link>
         </Button>
 
@@ -212,8 +214,8 @@ export function ClientCardUnified({ client }: ClientCardUnifiedProps) {
           size="sm"
           className="h-9 flex-1 rounded-lg text-xs font-semibold bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background transition-colors shadow-2xs"
         >
-          <Link href={`/dashboard/finances/invoices/create?client_id=${client.id}`} title="Facturar a este cliente" className="text-center justify-center">
-            Facturar
+          <Link href={`/dashboard/finances/invoices/create?client_id=${client.id}`} title={t('newInvoice')} className="text-center justify-center">
+            {t('billAction')}
           </Link>
         </Button>
       </div>

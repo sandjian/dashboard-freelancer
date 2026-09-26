@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { FlippableCreditCard } from "@/components/ui/flippable-card";
 import { detectCardNetwork, formatCardNumberByNetwork } from "@/lib/card-detection";
 import { CardNetworkLogo } from "./card-network-logo";
+import { useTranslations } from "next-intl";
 
 type ExtendedProps = {
     className?: string;
@@ -25,6 +26,7 @@ const METALLIC_GRADIENTS: Record<string, { label: string; gradient: string }> = 
 };
 
 export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
+    const t = useTranslations("Cards");
     const router = useRouter();
 
     // Card State
@@ -84,14 +86,14 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
         setServerError(null);
 
         if (!validity.allValid || !closingDay || !dueDay || !cardName) {
-            let errorMsg = "Por favor complete todos los campos requeridos.";
-            if (!cardName) errorMsg = "Falta el nombre o alias de la tarjeta.";
-            else if (!validity.number) errorMsg = `Número de tarjeta incompleto (mínimo ${networkDetails.maxLength} dígitos).`;
-            else if (!validity.holder) errorMsg = "Nombre del titular requerido.";
-            else if (!validity.month || !validity.year) errorMsg = "Fecha de vencimiento incompleta.";
-            else if (!validity.cvv) errorMsg = `CVV inválido (${networkDetails.cvvLength} dígitos requeridos).`;
-            else if (!closingDay) errorMsg = "Falta el día de cierre del resumen.";
-            else if (!dueDay) errorMsg = "Falta el día de vencimiento.";
+            let errorMsg = t("formErrorRequired");
+            if (!cardName) errorMsg = t("formErrorName");
+            else if (!validity.number) errorMsg = t("formErrorNumber", { count: networkDetails.maxLength });
+            else if (!validity.holder) errorMsg = t("formErrorHolder");
+            else if (!validity.month || !validity.year) errorMsg = t("formErrorExpiry");
+            else if (!validity.cvv) errorMsg = t("formErrorCvv", { count: networkDetails.cvvLength });
+            else if (!closingDay) errorMsg = t("formErrorClosingDay");
+            else if (!dueDay) errorMsg = t("formErrorDueDay");
 
             setServerError(errorMsg);
             return;
@@ -137,7 +139,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
             }
 
             console.error("Failed to create card", err);
-            setServerError("Ocurrió un error al registrar la tarjeta. Inténtelo nuevamente.");
+            setServerError(t("formErrorGeneric"));
             setIsSubmitting(false);
         }
     };
@@ -174,7 +176,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                 <div className="space-y-3 pb-4 border-b border-border">
                     <div className="flex justify-between items-center">
                         <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                            Acabado de la Tarjeta
+                            {t("finishLabel")}
                         </label>
                         <span className="text-xs font-medium text-foreground">
                             {METALLIC_GRADIENTS[cardColor]?.label}
@@ -201,14 +203,14 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                 {/* Card Name / Alias */}
                 <div className="space-y-2">
                     <label htmlFor="card_alias" className="text-sm font-medium text-foreground">
-                        Nombre o Alias de la Tarjeta
+                        {t("cardNameLabel")}
                     </label>
                     <input
                         id="card_alias"
                         name="card_alias"
                         maxLength={50}
                         className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        placeholder="Ej. Santander Black, Galicia Visa Gold"
+                        placeholder={t("cardNamePlaceholder")}
                         value={cardName}
                         onChange={(e) => setCardName(e.target.value)}
                     />
@@ -218,7 +220,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
                         <label htmlFor="card_number" className="text-sm font-medium text-foreground">
-                            Número de Tarjeta
+                            {t("cardNumberLabel")}
                         </label>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-secondary/40 border border-border">
                             <CardNetworkLogo network={networkDetails.network} className="h-3.5 w-auto" />
@@ -248,7 +250,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                 {/* Cardholder */}
                 <div className="space-y-2">
                     <label htmlFor="card_holder" className="text-sm font-medium text-foreground">
-                        Nombre del Titular (Como figura en el plástico)
+                        {t("cardHolderLabel")}
                     </label>
                     <input
                         id="card_holder"
@@ -257,7 +259,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                         autoComplete="off"
                         data-lpignore="true"
                         className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm uppercase placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
-                        placeholder="NOMBRE COMPLETO"
+                        placeholder={t("cardHolderPlaceholder")}
                         value={holder}
                         onChange={(e) => setHolder(e.target.value.toUpperCase())}
                         onFocus={() => setFocusField("holder")}
@@ -269,7 +271,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                 <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-2">
                         <label htmlFor="card_month" className="text-xs font-semibold text-muted-foreground font-mono uppercase">
-                            Mes Venc.
+                            {t("expiryMonth")}
                         </label>
                         <select
                             id="card_month"
@@ -292,7 +294,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
 
                     <div className="space-y-2">
                         <label htmlFor="card_year" className="text-xs font-semibold text-muted-foreground font-mono uppercase">
-                            Año Venc.
+                            {t("expiryYear")}
                         </label>
                         <select
                             id="card_year"
@@ -315,7 +317,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
 
                     <div className="space-y-2">
                         <label htmlFor="card_cvv" className="text-xs font-semibold text-muted-foreground font-mono uppercase">
-                            CVV ({networkDetails.cvvLength})
+                            {t("cvvLabel")} ({networkDetails.cvvLength})
                         </label>
                         <input
                             id="card_cvv"
@@ -339,7 +341,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
                     <div className="space-y-2">
                         <label htmlFor="closing_day" className="text-sm font-medium text-foreground">
-                            Día de Cierre
+                            {t("closingDayLabel")}
                         </label>
                         <input
                             id="closing_day"
@@ -349,18 +351,18 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                             max="31"
                             autoComplete="off"
                             className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            placeholder="Ej. 24"
+                            placeholder={t("closingDayPlaceholder")}
                             value={closingDay}
                             onChange={(e) => setClosingDay(e.target.value)}
                         />
                         <span className="text-[11px] text-muted-foreground block">
-                            Día en que corta el período
+                            {t("closingDayHelp")}
                         </span>
                     </div>
 
                     <div className="space-y-2">
                         <label htmlFor="due_day" className="text-sm font-medium text-foreground">
-                            Día de Vencimiento
+                            {t("dueDayLabel")}
                         </label>
                         <input
                             id="due_day"
@@ -370,12 +372,12 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                             max="31"
                             autoComplete="off"
                             className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            placeholder="Ej. 5"
+                            placeholder={t("dueDayPlaceholder")}
                             value={dueDay}
                             onChange={(e) => setDueDay(e.target.value)}
                         />
                         <span className="text-[11px] text-muted-foreground block">
-                            Día límite para pagar el resumen
+                            {t("dueDayHelp")}
                         </span>
                     </div>
                 </div>
@@ -386,7 +388,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
                     disabled={isSubmitting}
                     className="w-full h-11 mt-2 bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background font-semibold rounded-xl border border-border shadow-sm cursor-pointer transition-all duration-200"
                 >
-                    {isSubmitting ? "Registrando..." : "Guardar Tarjeta"}
+                    {isSubmitting ? t("savingCard") : t("saveCard")}
                 </Button>
             </form>
         </div>

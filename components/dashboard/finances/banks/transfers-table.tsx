@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { ArrowRight, ArrowLeftRight, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations, useLocale } from 'next-intl';
 
 export interface BankTransferRecord {
     id: string;
@@ -35,6 +36,8 @@ export interface BankTransferRecord {
 const ITEMS_PER_PAGE = 8;
 
 export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] }) {
+    const t = useTranslations('Banks');
+    const locale = useLocale();
     const [searchQuery, setSearchQuery] = React.useState('');
     const [currencyFilter, setCurrencyFilter] = React.useState<'all' | 'ARS' | 'USD'>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -69,7 +72,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
     const paginatedTransfers = filteredTransfers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     function formatTime(date: Date) {
-        return new Date(date).toLocaleTimeString('es-AR', {
+        return new Date(date).toLocaleTimeString(locale === 'es' ? 'es-AR' : 'en-US', {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -79,8 +82,8 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
         return (
             <div className="flex flex-col items-center justify-center py-16 border border-dashed border-border rounded-[var(--radius)] bg-muted/20 text-muted-foreground text-center">
                 <ArrowLeftRight className="w-10 h-10 text-muted-foreground/40 mb-3" />
-                <p className="text-sm font-medium">No se han registrado transferencias internas todavía.</p>
-                <p className="text-xs mt-1">Usa el botón de arriba para registrar movimientos entre tus cuentas.</p>
+                <p className="text-sm font-medium">{t('noTransfersYet')}</p>
+                <p className="text-xs mt-1">{t('noTransfersPrompt')}</p>
             </div>
         );
     }
@@ -95,7 +98,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                     <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Buscar por cuenta o nota..."
+                        placeholder={t('searchPlaceholder')}
                         className="pl-9 h-10 bg-background border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground"
                     />
                 </div>
@@ -113,7 +116,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                     >
-                        Todas ({transfers.length})
+                        {t('allFilter')} ({transfers.length})
                     </Button>
 
                     <Button
@@ -127,7 +130,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                     >
-                        Pesos (ARS)
+                        {t('pesosFilter')}
                     </Button>
 
                     <Button
@@ -141,7 +144,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                     >
-                        Dólares (USD)
+                        {t('dollarsFilter')}
                     </Button>
                 </div>
             </div>
@@ -152,22 +155,22 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                     <TableHeader>
                         <TableRow className="border-border/30 hover:bg-transparent bg-muted/10">
                             <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6">
-                                Fecha y Hora
+                                {t('colDateTime')}
                             </TableHead>
                             <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                                Origen (Débito)
+                                {t('colOrigin')}
                             </TableHead>
                             <TableHead className="w-10 py-3.5 text-center text-muted-foreground/40">
                                 —
                             </TableHead>
                             <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                                Destino (Crédito)
+                                {t('colDestination')}
                             </TableHead>
                             <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                                Motivo / Detalle
+                                {t('colNotes')}
                             </TableHead>
                             <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pr-4 sm:pr-6">
-                                Monto
+                                {t('colAmount')}
                             </TableHead>
                         </TableRow>
                     </TableHeader>
@@ -175,7 +178,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                         {paginatedTransfers.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="text-center py-10 text-xs text-muted-foreground">
-                                    No se encontraron movimientos que coincidan con la búsqueda.
+                                    {t('noMatchingTransfers')}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -193,7 +196,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                                             {formatTime(item.createdAt)}
                                         </div>
                                     </TableCell>
-
+                                
                                     {/* Cuenta Origen */}
                                     <TableCell className="py-3.5">
                                         <div className="flex items-center gap-2">
@@ -235,7 +238,7 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                                     {/* Monto transferido */}
                                     <TableCell className="text-right py-3.5 pr-4 sm:pr-6 font-mono tabular-nums font-semibold text-xs sm:text-sm text-secondary/40 dark:text-foreground/90 whitespace-nowrap">
                                         {item.fromAccount.currency === 'USD'
-                                            ? `US$ ${item.amount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+                                            ? `US$ ${item.amount.toLocaleString(locale === 'es' ? 'es-AR' : 'en-US', { minimumFractionDigits: 2 })}`
                                             : formatCurrency(item.amount)}
                                     </TableCell>
                                 </TableRow>
@@ -248,7 +251,11 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
             {/* Paginación y Footer */}
             <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-border/30 gap-3 text-xs text-muted-foreground">
                 <div>
-                    Mostrando {filteredTransfers.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, filteredTransfers.length)} de {filteredTransfers.length} movimientos
+                    {t('showing', {
+                        start: filteredTransfers.length === 0 ? 0 : startIndex + 1,
+                        end: Math.min(startIndex + ITEMS_PER_PAGE, filteredTransfers.length),
+                        total: filteredTransfers.length,
+                    })}
                 </div>
 
                 {totalPages > 1 && (
@@ -258,10 +265,10 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                             size="sm"
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage <= 1}
-                            className="h-8 px-2.5 rounded-lg text-xs border-border bg-background hover:bg-muted text-foreground"
+                            className="h-8 px-2.5 rounded-lg text-xs border-border bg-background hover:bg-muted text-foreground cursor-pointer"
                         >
                             <ChevronLeft className="w-4 h-4 mr-1" />
-                            Anterior
+                            {t('prev')}
                         </Button>
                         <span className="font-mono text-xs px-2 text-foreground">
                             {currentPage} / {totalPages}
@@ -271,9 +278,9 @@ export function TransfersTable({ transfers }: { transfers: BankTransferRecord[] 
                             size="sm"
                             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                             disabled={currentPage >= totalPages}
-                            className="h-8 px-2.5 rounded-lg text-xs border-border bg-background hover:bg-muted text-foreground"
+                            className="h-8 px-2.5 rounded-lg text-xs border-border bg-background hover:bg-muted text-foreground cursor-pointer"
                         >
-                            Siguiente
+                            {t('next')}
                             <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                     </div>

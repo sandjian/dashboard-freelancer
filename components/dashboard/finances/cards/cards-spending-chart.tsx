@@ -3,6 +3,7 @@
 import { PieChart as PieChartIcon } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface SpendingData {
     name: string;
@@ -23,6 +24,7 @@ const THEME_CHART_COLORS = [
 ];
 
 export function CardsSpendingChart({ data }: CardsSpendingChartProps) {
+    const t = useTranslations("Cards");
     const totalValue = data.reduce((sum, item) => sum + item.value, 0);
 
     return (
@@ -32,14 +34,14 @@ export function CardsSpendingChart({ data }: CardsSpendingChartProps) {
                     <PieChartIcon className="w-4 h-4" />
                 </div>
                 <div>
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Distribución</h3>
-                    <p className="text-[11px] text-muted-foreground">Por tarjeta este mes</p>
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">{t("distributionTitle")}</h3>
+                    <p className="text-[11px] text-muted-foreground">{t("distributionSubtitle")}</p>
                 </div>
             </div>
 
             {totalValue === 0 ? (
                 <div className="h-[220px] flex items-center justify-center text-xs text-muted-foreground border border-dashed border-border rounded-xl bg-muted/20">
-                    Sin gastos registrados este mes.
+                    {t("noExpensesThisMonth")}
                 </div>
             ) : (
                 <div className="h-[220px] w-full">

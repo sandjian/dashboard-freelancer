@@ -12,16 +12,19 @@ import { CreateAccountModal } from '@/components/dashboard/finances/banks/create
 import { TransferModal } from '@/components/dashboard/finances/banks/transfer-modal';
 import { TransfersTable } from '@/components/dashboard/finances/banks/transfers-table';
 import { TranslucentImpactCard } from '@/components/dashboard/finances/invoices/translucent-impact-card';
+import { getTranslations } from 'next-intl/server';
 
-const accountTypeLabels: Record<string, { label: string; icon: LucideIcon }> = {
-    bank: { label: 'Banco Tradicional', icon: Landmark },
-    wallet: { label: 'Billetera Virtual', icon: Wallet },
-    cash: { label: 'Efectivo', icon: Banknote },
-    usd_account: { label: 'Cuenta en USD', icon: DollarSign },
+const accountTypeIcons: Record<string, LucideIcon> = {
+    bank: Landmark,
+    wallet: Wallet,
+    cash: Banknote,
+    usd_account: DollarSign,
 };
 
 export default async function BanksPage() {
-  const user = await requireUser();
+    const user = await requireUser();
+    const t = await getTranslations('Banks');
+
     const [accounts, summary, transfers] = await Promise.all([
         fetchBankAccounts(),
         fetchBankLiquiditySummary(),
@@ -31,6 +34,21 @@ export default async function BanksPage() {
     // Métricas auxiliares
     const activeAccountsCount = accounts.filter(a => a.is_active).length;
     const usdAccountsCount = accounts.filter(a => a.currency === 'USD').length;
+
+    const getAccountTypeLabel = (type: string) => {
+        switch (type) {
+            case 'bank':
+                return t('typeTraditional');
+            case 'wallet':
+                return t('typeWallet');
+            case 'cash':
+                return t('typeCash');
+            case 'usd_account':
+                return t('typeUSD');
+            default:
+                return type;
+        }
+    };
 
     return (
         <div className="w-full max-w-[1600px] mx-auto space-y-6 sm:space-y-8 min-h-screen text-foreground">
@@ -44,13 +62,13 @@ export default async function BanksPage() {
                     <div className="space-y-1.5 w-full xl:w-auto">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
                             <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
-                            <span>Tesorería & Cuentas</span>
+                            <span>{t('badge')}</span>
                         </div>
                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground/80 font-sans">
-                            Bancos y Liquidez
+                            {t('title')}
                         </h1>
                         <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-                            Control de saldos reales disponibles en bancos, billeteras y cajas de ahorro.
+                            {t('description')}
                         </p>
                     </div>
 
@@ -63,26 +81,26 @@ export default async function BanksPage() {
                 {/* KPIs Grid: 1 column on < lg, 3 columns on lg+ */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 pt-6 relative z-10">
                     <TranslucentImpactCard
-                        title="Liquidez Total (ARS)"
+                        title={t('totalLiquidityARS')}
                         value={formatCurrency(summary.totalARS)}
-                        subtitle="Bancos, billeteras y efectivo en pesos"
-                        trend="En Pesos"
+                        subtitle={t('liquiditySubtitleARS')}
+                        trend={t('inPesos')}
                         icon={Banknote}
                     />
 
                     <TranslucentImpactCard
-                        title="Reserva Total (USD)"
+                        title={t('totalReserveUSD')}
                         value={`US$ ${summary.totalUSD.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`}
-                        subtitle={usdAccountsCount > 0 ? `${usdAccountsCount} cuentas en dólares` : 'Ahorros internacionales'}
-                        trend="Dólares"
+                        subtitle={usdAccountsCount > 0 ? t('accountsInUSD', { count: usdAccountsCount }) : t('intlSavings')}
+                        trend={t('inDollars')}
                         icon={DollarSign}
                     />
 
                     <TranslucentImpactCard
-                        title="Cuentas Activas"
+                        title={t('activeAccounts')}
                         value={activeAccountsCount.toString()}
-                        subtitle={`${accounts.length} cuentas registradas en total`}
-                        trend="Operativas"
+                        subtitle={t('accountsRegistered', { count: accounts.length })}
+                        trend={t('operational')}
                         icon={Landmark}
                     />
                 </div>
@@ -92,21 +110,18 @@ export default async function BanksPage() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-border">
                     <div>
-                        <h2 className="text-lg font-bold text-foreground">Cuentas Registradas</h2>
-                        <p className="text-xs text-muted-foreground">Saldos conciliados en entidades bancarias y billeteras</p>
+                        <h2 className="text-lg font-bold text-foreground">{t('registeredAccounts')}</h2>
+                        <p className="text-xs text-muted-foreground">{t('registeredAccountsSubtitle')}</p>
                     </div>
                     <span className="text-xs font-mono text-muted-foreground">
-                        {accounts.length} {accounts.length === 1 ? 'cuenta' : 'cuentas'}
+                        {accounts.length} {accounts.length === 1 ? t('accountCountSingular') : t('accountCountPlural')}
                     </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                     {accounts.map((acc) => {
-                        const typeConfig = accountTypeLabels[acc.account_type] || {
-                            label: acc.account_type,
-                            icon: Landmark,
-                        };
-                        const Icon = typeConfig.icon;
+                        const Icon = accountTypeIcons[acc.account_type] || Landmark;
+                        const label = getAccountTypeLabel(acc.account_type);
 
                         return (
                             <div
@@ -129,7 +144,7 @@ export default async function BanksPage() {
                                                     {acc.name}
                                                 </h3>
                                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                                    {typeConfig.label}
+                                                    {label}
                                                 </p>
                                             </div>
                                         </div>
@@ -141,7 +156,7 @@ export default async function BanksPage() {
                                     <div className="my-4 p-4 rounded-xl bg-card text-neutral-900/80 dark:bg-foreground/90 dark:border dark:border-zinc-800 shadow-xs flex items-center justify-between">
                                         <div>
                                             <span className="text-[10px] uppercase font-semibold tracking-wider text-neutral-900/70 block">
-                                                Saldo Conciliado
+                                                {t('reconciledBalance')}
                                             </span>
                                             <span className="text-lg sm:text-xl font-bold font-mono text-neutral-900/80 mt-1 block">
                                                 {acc.currency === 'USD'
@@ -163,11 +178,11 @@ export default async function BanksPage() {
                                             "w-2 h-2 rounded-full",
                                             acc.is_active ? "bg-emerald-500" : "bg-zinc-400"
                                         )} />
-                                        <span>{acc.is_active ? "Activa para cobros" : "Inactiva"}</span>
+                                        <span>{acc.is_active ? t('activeForReceiving') : t('inactive')}</span>
                                     </span>
 
                                     <span className="text-[11px] font-mono text-muted-foreground/80">
-                                        {acc.currency === 'USD' ? 'Divisa Extranjera' : 'Moneda Local'}
+                                        {acc.currency === 'USD' ? t('foreignCurrency') : t('localCurrency')}
                                     </span>
                                 </div>
                             </div>
@@ -180,11 +195,11 @@ export default async function BanksPage() {
             <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between pb-2 border-b border-border">
                     <div>
-                        <h2 className="text-lg font-bold text-foreground">Movimientos y Transferencias</h2>
-                        <p className="text-xs text-muted-foreground">Registro de traspasos de fondos y rebalanceo entre cuentas</p>
+                        <h2 className="text-lg font-bold text-foreground">{t('movementsTitle')}</h2>
+                        <p className="text-xs text-muted-foreground">{t('movementsSubtitle')}</p>
                     </div>
                     <span className="text-xs font-mono text-muted-foreground">
-                        {transfers.length} {transfers.length === 1 ? 'movimiento' : 'movimientos'}
+                        {transfers.length} {transfers.length === 1 ? t('movementCountSingular') : t('movementCountPlural')}
                     </span>
                 </div>
 

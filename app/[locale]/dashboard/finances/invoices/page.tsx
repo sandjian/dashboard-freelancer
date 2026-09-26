@@ -1,6 +1,7 @@
 import { requireUser } from '@/lib/auth-guard';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { getTranslations } from 'next-intl/server';
 import {
   fetchInvoiceStats,
   fetchMonthlyIncomeHistory,
@@ -39,10 +40,12 @@ export default async function InvoicesPage({
     invoiceStats,
     incomeHistory,
     bankAccounts,
+    t,
   ] = await Promise.all([
     fetchInvoiceStats(year, month),
     fetchMonthlyIncomeHistory(12),
     fetchBankAccounts(),
+    getTranslations('Invoices'),
   ]);
 
   return (
@@ -57,13 +60,13 @@ export default async function InvoicesPage({
           <div className="space-y-1.5 w-full xl:w-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
               <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
-              <span>Gestión Financiera</span>
+              <span>{t('badge')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground/80 font-sans">
-              Ingresos
+              {t('heroTitle')}
             </h1>
             <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              Gestiona facturación, estados de pago y seguimiento de cobros en tiempo real.
+              {t('heroDescription')}
             </p>
           </div>
 
@@ -80,7 +83,7 @@ export default async function InvoicesPage({
               <Link href="/dashboard/finances/invoices/create">
                 <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
                   <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                  <span>Nueva Factura</span>
+                  <span>{t('newInvoice')}</span>
                 </div>
               </Link>
             </Button>
@@ -90,19 +93,19 @@ export default async function InvoicesPage({
         {/* Banner Metric Cards: 1 column on < lg, 2 columns on lg+ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 pt-6 sm:pt-8 relative z-10">
           <TranslucentImpactCard
-            title="Ingreso Neto"
+            title={t('netIncome')}
             value={formatCurrency(invoiceStats.facturadoAmount)}
-            subtitle={`${invoiceStats.facturadoCount} facturas cobradas`}
+            subtitle={t('invoicesCollected', { count: invoiceStats.facturadoCount })}
             icon={TrendingUp}
-            trend="Total cobrado"
+            trend={t('totalCollected')}
           />
 
           <TranslucentImpactCard
-            title="Por Cobrar"
+            title={t('receivables')}
             value={formatCurrency(invoiceStats.pendienteAmount)}
-            subtitle={`${invoiceStats.pendienteCount} facturas pendientes`}
+            subtitle={t('invoicesPending', { count: invoiceStats.pendienteCount })}
             icon={Clock}
-            trend="Pendientes del mes"
+            trend={t('monthPending')}
           />
         </div>
       </div>
@@ -116,7 +119,7 @@ export default async function InvoicesPage({
             {/* Integrated Header Toolbar */}
             <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 p-3.5 sm:p-5 border-b border-border bg-muted/20">
               <div className="w-full md:max-w-xs">
-                <Search placeholder="Buscar cliente..." />
+                <Search placeholder={t('searchPlaceholder')} />
               </div>
               <div className="w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
                 <StatusButtons />
@@ -144,7 +147,7 @@ export default async function InvoicesPage({
               <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <h3 className="text-xs sm:text-sm font-semibold text-foreground tracking-tight">Historial de Ingresos (Últimos 12 meses)</h3>
+              <h3 className="text-xs sm:text-sm font-semibold text-foreground tracking-tight">{t('incomeHistoryTitle')}</h3>
             </div>
             <div className="h-[280px] sm:h-[340px] md:h-[370px] w-full">
               <InvoicesHistoryChart data={incomeHistory as unknown as InvoiceHistoryData[]} />

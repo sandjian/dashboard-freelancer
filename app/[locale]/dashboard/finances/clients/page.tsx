@@ -6,13 +6,12 @@ import { ClientsPortfolioCharts } from '@/components/dashboard/finances/clients/
 import { ClientsExplorer } from '@/components/dashboard/finances/clients/clients-explorer';
 import { formatCurrency } from '@/lib/utils';
 import { Users, AlertTriangle, Clock, TrendingUp, Sparkles } from 'lucide-react';
-
-export const metadata = {
-  title: 'Clientes | Dashboard Financiero',
-};
+import { getTranslations } from 'next-intl/server';
 
 export default async function ClientsPage() {
   const user = await requireUser();
+  const t = await getTranslations('Clients');
+
   const [clients, portfolioMetrics] = await Promise.all([
     fetchClientsWithStats(),
     fetchClientsPortfolioMetrics(),
@@ -30,13 +29,13 @@ export default async function ClientsPage() {
           <div className="space-y-1.5 w-full xl:w-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
               <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
-              <span>Gestión de Clientes & Cobranzas</span>
+              <span>{t('badge')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground/80 font-sans">
-              Clientes
+              {t('title')}
             </h1>
             <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              Monitorea estados de cuenta, facturación acumulada, mora y saldo por cobrar en tiempo real.
+              {t('description')}
             </p>
           </div>
 
@@ -48,35 +47,35 @@ export default async function ClientsPage() {
         {/* 1. Fila de KPIs Principales: 1 column on < lg, 2 on lg, 4 on xl+ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8 relative z-10">
           <TranslucentImpactCard
-            title="Total / Activos"
+            title={t('totalActive')}
             value={`${portfolioMetrics.totalClients}`}
-            subtitle={`${portfolioMetrics.activeClients} activos con historial`}
-            trend="Cartera"
+            subtitle={t('activeWithHistory', { count: portfolioMetrics.activeClients })}
+            trend={t('portfolioTrend')}
             icon={Users}
           />
 
           <TranslucentImpactCard
-            title="Mora Acumulada"
+            title={t('overdueDebt')}
             value={formatCurrency(portfolioMetrics.totalOverdueAmount)}
-            subtitle="Facturas vencidas impagas"
-            trend={portfolioMetrics.totalOverdueAmount > 0 ? "Atención" : "Al día"}
+            subtitle={t('unpaidOverdueInvoices')}
+            trend={portfolioMetrics.totalOverdueAmount > 0 ? t('attention') : t('upToDate')}
             icon={AlertTriangle}
             className={portfolioMetrics.totalOverdueAmount > 0 ? "border-destructive/30" : ""}
           />
 
           <TranslucentImpactCard
-            title="Por Cobrar"
+            title={t('receivables')}
             value={formatCurrency(portfolioMetrics.totalPendingAmount)}
-            subtitle="Facturas vigentes a término"
-            trend="En término"
+            subtitle={t('currentPendingInvoices')}
+            trend={t('inTerm')}
             icon={Clock}
           />
 
           <TranslucentImpactCard
-            title="Ticket Promedio"
+            title={t('averageTicket')}
             value={formatCurrency(portfolioMetrics.arpu)}
-            subtitle="Promedio facturado por cliente"
-            trend="ARPU"
+            subtitle={t('averageBilledPerClient')}
+            trend={t('arpu')}
             icon={TrendingUp}
           />
         </div>
@@ -86,8 +85,8 @@ export default async function ClientsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-border">
           <div>
-            <h2 className="text-lg font-bold text-foreground">Análisis de Cartera</h2>
-            <p className="text-xs text-muted-foreground">Comportamiento financiero y concentración de ventas</p>
+            <h2 className="text-lg font-bold text-foreground">{t('portfolioAnalysis')}</h2>
+            <p className="text-xs text-muted-foreground">{t('portfolioAnalysisSubtitle')}</p>
           </div>
         </div>
 
@@ -98,11 +97,11 @@ export default async function ClientsPage() {
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between pb-2 border-b border-border">
           <div>
-            <h2 className="text-lg font-bold text-foreground">Directorio de Clientes</h2>
-            <p className="text-xs text-muted-foreground">Búsqueda, filtros por salud crediticia y acciones rápidas</p>
+            <h2 className="text-lg font-bold text-foreground">{t('directoryTitle')}</h2>
+            <p className="text-xs text-muted-foreground">{t('directorySubtitle')}</p>
           </div>
           <span className="text-xs font-mono text-muted-foreground">
-            {clients.length} {clients.length === 1 ? 'cliente' : 'clientes'}
+            {clients.length} {clients.length === 1 ? t('clientCountSingular') : t('clientCountPlural')}
           </span>
         </div>
 

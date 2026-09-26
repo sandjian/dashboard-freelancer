@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedExpandableList } from "@/components/ui/animated-expandable-list";
 import { CalendarClock, CreditCard, Tag } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 interface RecurringExpenseItem {
     id: string; // Template ID
@@ -16,12 +17,14 @@ interface RecurringExpenseItem {
 }
 
 export function RecurringExpensesList({ items }: { items: RecurringExpenseItem[] }) {
+    const t = useTranslations('Expenses');
+    const locale = useLocale();
 
     return (
         <AnimatedExpandableList
             items={items}
             getKey={(item) => item.id}
-            emptyMessage="No hay gastos recurrentes para los próximos días."
+            emptyMessage={t('noUpcomingRecurring')}
             renderItem={(item) => {
                 const daysUntil = Math.ceil((new Date(item.next_due_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
                 const isClose = daysUntil <= 7;
@@ -42,7 +45,7 @@ export function RecurringExpensesList({ items }: { items: RecurringExpenseItem[]
                                 </span>
                             </div>
                             <span className={`text-[10px] font-medium ${isClose ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                {daysUntil > 0 ? `En ${daysUntil} días` : 'Hoy/Vencido'}
+                                {daysUntil > 0 ? t('inDays', { days: daysUntil }) : t('todayOrOverdue')}
                             </span>
                         </div>
                     </div>
@@ -62,7 +65,7 @@ export function RecurringExpensesList({ items }: { items: RecurringExpenseItem[]
                         <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40 border border-border/40">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Tag className="h-4 w-4" />
-                                <span className="text-xs">Categoría</span>
+                                <span className="text-xs">{t('tableCategory')}</span>
                             </div>
                             <span className="text-xs font-medium font-mono text-foreground">{item.category_name}</span>
                         </div>
@@ -70,17 +73,17 @@ export function RecurringExpensesList({ items }: { items: RecurringExpenseItem[]
                         <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40 border border-border/40">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <CalendarClock className="h-4 w-4" />
-                                <span className="text-xs">Vencimiento</span>
+                                <span className="text-xs">{t('tableDate')}</span>
                             </div>
                             <span className="text-xs font-medium text-foreground">
-                                {new Date(item.next_due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
+                                {new Date(item.next_due_date).toLocaleDateString(locale === 'es' ? 'es-AR' : 'en-US', { day: 'numeric', month: 'long' })}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between p-2 rounded-lg bg-muted/40 border border-border/40">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <CreditCard className="h-4 w-4" />
-                                <span className="text-xs">Método</span>
+                                <span className="text-xs">{t('tableMethod')}</span>
                             </div>
                             <span className="text-xs font-medium text-foreground capitalize">
                                 {item.payment_method?.replace(/_/g, ' ') || 'Definido en Plantilla'}
@@ -92,7 +95,7 @@ export function RecurringExpensesList({ items }: { items: RecurringExpenseItem[]
                         onClick={onClose}
                         className="w-full py-2.5 mt-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted border border-border rounded-xl transition-all cursor-pointer"
                     >
-                        Volver
+                        {t('back')}
                     </button>
                 </div>
             )}

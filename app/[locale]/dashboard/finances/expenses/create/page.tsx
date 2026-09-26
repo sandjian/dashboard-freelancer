@@ -3,6 +3,7 @@ import { fetchVendors, fetchExpenseCategories, fetchCards } from '@/lib/data';
 import { CreateExpenseForm } from '@/components/dashboard/finances/expenses/create-form';
 import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getTranslations } from 'next-intl/server';
 
 export default async function CreateExpensePage({
     searchParams,
@@ -16,10 +17,11 @@ export default async function CreateExpensePage({
 }) {
   const user = await requireUser();
     const resolvedParams = await searchParams;
-    const [vendors, categories, cards] = await Promise.all([
+    const [vendors, categories, cards, t] = await Promise.all([
         fetchVendors(),
         fetchExpenseCategories(),
         fetchCards(),
+        getTranslations('Expenses'),
     ]);
 
     // Intelligent Category Matching
@@ -39,9 +41,9 @@ export default async function CreateExpensePage({
         <div className="flex justify-center items-center min-h-[80vh] p-4">
             <Card className="w-full max-w-2xl shadow-xl border-border bg-card">
                 <CardHeader className="border-b border-border bg-muted/20">
-                    <CardTitle className="text-xl font-bold text-foreground">Registrar Nuevo Gasto</CardTitle>
+                    <CardTitle className="text-xl font-bold text-foreground">{t('registerNewExpense')}</CardTitle>
                     <CardDescription className="text-muted-foreground">
-                        Ingresa los detalles de la transacción o verifica la información pre-cargada.
+                        {t('registerNewExpenseDescription')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">

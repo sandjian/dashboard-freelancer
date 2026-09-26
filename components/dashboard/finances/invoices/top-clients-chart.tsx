@@ -14,8 +14,9 @@ const COLORS = [
 
 import { TooltipProps } from "recharts";
 import { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
+import { useTranslations } from "next-intl";
 
-const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) => {
+const CustomTooltip = ({ active, payload, labelText }: TooltipProps<ValueType, NameType> & { labelText?: string }) => {
     if (active && payload && payload.length) {
         return (
             <div className="rounded-lg border border-border bg-popover p-3 shadow-xl backdrop-blur-md">
@@ -24,7 +25,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) =
                     <span className="text-sm font-bold text-primary">
                         {formatCurrency(Number(payload[0].value))}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Facturado</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{labelText || 'Facturado'}</span>
                 </div>
             </div>
         )
@@ -33,10 +34,12 @@ const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) =
 }
 
 export function TopClientsChart({ data }: { data: { name: string; value: number }[] }) {
+    const t = useTranslations('Invoices');
+
     if (!data || data.length === 0) {
         return (
             <div className="flex h-[200px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20">
-                <p className="text-xs text-muted-foreground">Sin datos de clientes este mes</p>
+                <p className="text-xs text-muted-foreground">{t('noClientsThisMonth')}</p>
             </div>
         )
     }
@@ -63,7 +66,7 @@ export function TopClientsChart({ data }: { data: { name: string; value: number 
                             />
                         ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip labelText={t('filterPaid')} />} />
                     <Legend
                         verticalAlign="bottom"
                         height={36}

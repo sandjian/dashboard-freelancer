@@ -15,8 +15,10 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { useTranslations } from "next-intl";
 
 export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
+    const t = useTranslations('Clients');
     const avatarInitials = client.name
         .split(" ")
         .filter(Boolean)
@@ -42,7 +44,7 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
                         <BreadcrumbLink href="/dashboard/finances/clients" className="text-muted-foreground hover:text-foreground">
-                            Clientes
+                            {t('title')}
                         </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator />
@@ -72,7 +74,7 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                         <div className="space-y-1.5 min-w-0">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
                                 <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
-                                <span>Ficha de Cliente</span>
+                                <span>{t('clientFile')}</span>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3">
@@ -104,10 +106,10 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                                     />
                                     <span className="font-medium text-foreground">
                                         {isOverdue
-                                            ? `Mora: ${formatCurrency(client.overdue_amount)}`
+                                            ? `${t('overdueLabel')}: ${formatCurrency(client.overdue_amount)}`
                                             : hasPending
-                                            ? `Por cobrar: ${formatCurrency(client.pending_amount)}`
-                                            : "Al día (Sin deuda)"}
+                                            ? `${t('receivables')}: ${formatCurrency(client.pending_amount)}`
+                                            : t('noDebt')}
                                     </span>
                                 </span>
                             </div>
@@ -116,7 +118,7 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
                                 <div className="flex items-center gap-1.5">
                                     <Building2 className="w-3.5 h-3.5 shrink-0" />
-                                    <span>{client.brand || "Cliente Directo"}</span>
+                                    <span>{client.brand || t('directClient')}</span>
                                 </div>
 
                                 {client.email && (
@@ -151,7 +153,7 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                         >
                             <Link href="/dashboard/finances/clients">
                                 <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-                                <span>Volver</span>
+                                <span>{t('back')}</span>
                             </Link>
                         </Button>
 
@@ -169,7 +171,7 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                                     className="h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted/50 text-foreground text-xs font-semibold cursor-pointer"
                                 >
                                     <Pencil className="w-3.5 h-3.5 mr-1.5" />
-                                    <span>Editar</span>
+                                    <span>{t('edit')}</span>
                                 </Button>
                             }
                         />
@@ -181,7 +183,7 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
                             <Link href={`/dashboard/finances/invoices/create?client_id=${client.id}`}>
                                 <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
                                     <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                                    <span>Nueva Factura</span>
+                                    <span>{t('newInvoice')}</span>
                                 </div>
                             </Link>
                         </Button>
@@ -190,8 +192,8 @@ export function ClientProfileHeader({ client }: { client: ClientWithStats }) {
 
                 {/* Subtítulo informativo */}
                 <div className="pt-4 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2 relative z-10">
-                    <span>Información histórica consolidada y estado de cuenta del cliente</span>
-                    <span>ID: {client.id.slice(0, 8)}...</span>
+                    <span>{t('clientHistoricInfo')}</span>
+                    <span>{t('idLabel')}: {client.id.slice(0, 8)}...</span>
                 </div>
             </div>
         </div>

@@ -4,14 +4,28 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PieChart as PieChartIcon, TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { ClientsPortfolioMetrics } from "@/lib/data";
+import { useTranslations } from "next-intl";
 
 interface ClientsPortfolioChartsProps {
   metrics: ClientsPortfolioMetrics;
 }
 
 export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps) {
+  const t = useTranslations('Clients');
   const { portfolioStatusDistribution, topClientsByRevenue } = metrics;
   const hasClients = metrics.totalClients > 0;
+
+  const translatedStatusDistribution = portfolioStatusDistribution.map((item) => {
+    let name = item.name;
+    if (item.name === 'Al Día' || item.name === 'Al dia' || item.name.toLowerCase().includes('día')) {
+      name = t('upToDateFilter');
+    } else if (item.name.toLowerCase().includes('pendiente')) {
+      name = t('pendingFilter');
+    } else if (item.name.toLowerCase().includes('mora')) {
+      name = t('overdueFilter');
+    }
+    return { ...item, name };
+  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
@@ -24,25 +38,25 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
                 <PieChartIcon className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-foreground tracking-tight">Salud de la Cartera</h3>
-                <p className="text-xs text-muted-foreground">Distribución por estado de cobro</p>
+                <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('portfolioHealth')}</h3>
+                <p className="text-xs text-muted-foreground">{t('collectionStatusDistribution')}</p>
               </div>
             </div>
             <span className="text-xs text-muted-foreground">
-              {metrics.totalClients} {metrics.totalClients === 1 ? 'cliente' : 'clientes'}
+              {metrics.totalClients} {metrics.totalClients === 1 ? t('clientCountSingular') : t('clientCountPlural')}
             </span>
           </div>
 
           {!hasClients ? (
             <div className="h-[220px] flex items-center justify-center text-xs text-muted-foreground border border-dashed border-border rounded-xl bg-muted/20 my-4">
-              Sin clientes registrados.
+              {t('noClientsRegistered')}
             </div>
           ) : (
             <div className="h-[200px] w-full relative my-2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={portfolioStatusDistribution}
+                    data={translatedStatusDistribution}
                     cx="50%"
                     cy="50%"
                     innerRadius={55}
@@ -52,7 +66,7 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
                     stroke="none"
                     cornerRadius={3}
                   >
-                    {portfolioStatusDistribution.map((entry, index) => (
+                    {translatedStatusDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -70,7 +84,7 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
                               <span>{item.name}</span>
                             </div>
                             <div className="text-sm font-bold text-foreground">
-                              {item.count} {item.count === 1 ? 'cliente' : 'clientes'} ({item.value}%)
+                              {item.count} {item.count === 1 ? t('clientCountSingular') : t('clientCountPlural')} ({item.value}%)
                             </div>
                           </div>
                         );
@@ -86,7 +100,7 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
                   {metrics.totalClients}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Cartera
+                  {t('innerPortfolioLabel')}
                 </span>
               </div>
             </div>
@@ -95,7 +109,7 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
 
         {/* Legend / Status Badges */}
         <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border">
-          {portfolioStatusDistribution.map((item) => (
+          {translatedStatusDistribution.map((item) => (
             <div
               key={item.name}
               className="flex flex-col items-center justify-center p-2 rounded-lg bg-muted/20 border border-border/50 text-center"
@@ -121,18 +135,18 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
                 <TrendingUp className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-foreground tracking-tight">Top Clientes por Facturación</h3>
-                <p className="text-xs text-muted-foreground">Volumen acumulado de ventas</p>
+                <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('topClientsByRevenue')}</h3>
+                <p className="text-xs text-muted-foreground">{t('salesVolumeAccumulated')}</p>
               </div>
             </div>
             <span className="text-xs text-muted-foreground">
-              Histórico
+              {t('historyLabel')}
             </span>
           </div>
 
           {topClientsByRevenue.length === 0 ? (
             <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground border border-dashed border-border rounded-xl bg-muted/20 my-4">
-              Sin facturación registrada en clientes.
+              {t('noRevenueInClients')}
             </div>
           ) : (
             <div className="space-y-3.5 my-4">
@@ -159,7 +173,7 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
                       <div className="flex items-center gap-2">
                         {client.pendingAmount > 0 && (
                           <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-md border border-neutral-300 dark:border-zinc-800 bg-neutral-100/80 dark:bg-zinc-900/60 text-neutral-600 dark:text-zinc-400 sm:inline">
-                            Saldo: {formatCurrency(client.pendingAmount)}
+                            {t('balance')}: {formatCurrency(client.pendingAmount)}
                           </span>
                         )}
                         <span className="font-semibold font-mono text-foreground">
@@ -183,8 +197,8 @@ export function ClientsPortfolioCharts({ metrics }: ClientsPortfolioChartsProps)
 
         {/* Footer info note */}
         <div className="flex items-center justify-between pt-3 border-t border-border text-xs text-muted-foreground">
-          <span>Facturación neta acumulada</span>
-          <span>Top 5 clientes</span>
+          <span>{t('netBilledAccumulated')}</span>
+          <span>{t('top5Clients')}</span>
         </div>
       </div>
     </div>

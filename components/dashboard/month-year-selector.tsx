@@ -1,19 +1,20 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { format } from 'date-fns';
+import { getDateFnsLocale } from '@/lib/date-locale';
 import { Button } from '@/components/ui/button';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
-
-const monthNames = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
 
 export function DateNavigator({ className }: { className?: string } = {}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+  const locale = useLocale();
+  const dateLocale = getDateFnsLocale(locale);
+  const t = useTranslations('Common');
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -46,7 +47,8 @@ export function DateNavigator({ className }: { className?: string } = {}) {
     replace(`${pathname}?${params.toString()}`);
   };
 
-  const displayDate = `${monthNames[month - 1]} ${year}`;
+  const selectedDate = new Date(year, month - 1, 1);
+  const displayDate = format(selectedDate, 'LLLL yyyy', { locale: dateLocale });
 
   return (
     <div className={`flex items-center gap-1 p-1 bg-background border border-input rounded-md shadow-sm text-foreground ${className || ''}`.trim()}>
@@ -54,13 +56,13 @@ export function DateNavigator({ className }: { className?: string } = {}) {
         variant="ghost"
         size="icon"
         onClick={() => handleNavigate('prev')}
-        aria-label="Mes anterior"
+        aria-label={t('previousMonth')}
         className="h-7 w-7 hover:bg-muted"
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </Button>
 
-      <span className="w-32 text-center font-medium text-sm text-foreground">
+      <span className="w-36 text-center font-medium text-sm text-foreground capitalize truncate px-1">
         {displayDate}
       </span>
 
@@ -68,7 +70,7 @@ export function DateNavigator({ className }: { className?: string } = {}) {
         variant="ghost"
         size="icon"
         onClick={() => handleNavigate('next')}
-        aria-label="Mes siguiente"
+        aria-label={t('nextMonth')}
         className="h-7 w-7 hover:bg-muted"
       >
         <ChevronRightIcon className="h-4 w-4" />
@@ -82,7 +84,7 @@ export function DateNavigator({ className }: { className?: string } = {}) {
         className="h-7 px-2 text-xs font-medium hover:bg-muted"
         onClick={() => handleNavigate('today')}
       >
-        Hoy
+        {t('today')}
       </Button>
     </div>
   );

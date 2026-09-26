@@ -9,6 +9,7 @@ import { CardNetworkLogo } from "./card-network-logo";
 import { DeleteCardDialog } from "./delete-card-dialog";
 import { formatCurrency } from "@/lib/utils";
 import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toggleCardStatementStatus } from "@/lib/actions";
@@ -77,6 +78,9 @@ export function RealCard({
     month = new Date().getMonth() + 1,
     accounts = [],
 }: RealCardProps) {
+    const t = useTranslations("Cards");
+    const locale = useLocale();
+
     const colorKey = color || colorVariant || 'slate';
     const gradient = METALLIC_GRADIENTS[colorKey] || METALLIC_GRADIENTS.slate;
     const network = inferNetworkFromName(name);
@@ -114,8 +118,8 @@ export function RealCard({
                         e.stopPropagation();
                         setIsDeleteDialogOpen(true);
                     }}
-                    title="Eliminar tarjeta"
-                    aria-label="Eliminar tarjeta"
+                    title={t("deleteCard")}
+                    aria-label={t("deleteCard")}
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -136,12 +140,12 @@ export function RealCard({
                         <div className="flex justify-between items-end">
                             <div className="flex gap-4 text-white">
                                 <div className="flex flex-col items-start">
-                                    <span className="text-[8px] uppercase tracking-[0.14em] font-mono text-zinc-400">Cierra</span>
-                                    <span className="font-mono text-xs font-semibold text-white">Día {closingDay}</span>
+                                    <span className="text-[8px] uppercase tracking-[0.14em] font-mono text-zinc-400">{t("closes")}</span>
+                                    <span className="font-mono text-xs font-semibold text-white">{t("day")} {closingDay}</span>
                                 </div>
                                 <div className="flex flex-col items-start">
-                                    <span className="text-[8px] uppercase tracking-[0.14em] font-mono text-zinc-400">Vence</span>
-                                    <span className="font-mono text-xs font-semibold text-white">Día {dueDay}</span>
+                                    <span className="text-[8px] uppercase tracking-[0.14em] font-mono text-zinc-400">{t("due")}</span>
+                                    <span className="font-mono text-xs font-semibold text-white">{t("day")} {dueDay}</span>
                                 </div>
                             </div>
 
@@ -157,11 +161,11 @@ export function RealCard({
                                 <span className="text-[10px] font-mono font-medium tracking-wider uppercase text-white/70">
                                     {statement ? (
                                         statement.status === 'paid' 
-                                            ? 'Resumen Saldado' 
+                                            ? t("statementPaid") 
                                             : statement.status === 'partially_paid'
-                                            ? 'Resumen Parcial'
-                                            : 'Resumen Pendiente'
-                                    ) : 'Sin Movimientos'}
+                                            ? t("statementPartial")
+                                            : t("statementPending")
+                                    ) : t("noMovements")}
                                 </span>
 
                                 <div className="relative">
@@ -181,7 +185,7 @@ export function RealCard({
                                                 className="text-red-500 hover:text-red-600 focus:text-red-600 focus:bg-red-500/10 cursor-pointer gap-2"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                                <span>Eliminar tarjeta</span>
+                                                <span>{t("deleteCard")}</span>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -194,7 +198,7 @@ export function RealCard({
                                     <div className="space-y-1">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <span className="text-[9px] font-mono uppercase tracking-widest text-white/70">
-                                                {statement.status === 'partially_paid' ? 'Saldo Restante' : 'Total Período'}
+                                                {statement.status === 'partially_paid' ? t("remainingDebt") : t("periodTotal")}
                                             </span>
                                         </div>
                                         <p className="text-xl sm:text-2xl font-mono font-bold tracking-tight text-white drop-shadow-sm">
@@ -206,19 +210,19 @@ export function RealCard({
                                         </p>
                                         {statement.status === 'partially_paid' ? (
                                             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-200 font-mono text-[10px]">
-                                                <span>Parcial:</span>
+                                                <span>{t("partial")}:</span>
                                                 <span className="font-semibold text-white">{formatCurrency(statement.paidAmount || 0)}</span>
                                                 <span>/</span>
                                                 <span>{formatCurrency(statement.totalAmount)}</span>
                                             </div>
                                         ) : (
                                             <span className="text-[10px] font-mono text-white/60 block">
-                                                Vence: {new Date(statement.dueDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                                                {t("due")}: {new Date(statement.dueDate).toLocaleDateString(locale === "es" ? "es-AR" : "en-US", { day: '2-digit', month: '2-digit' })}
                                             </span>
                                         )}
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-white/70 font-mono">No hay resumen cargado este mes</p>
+                                    <p className="text-xs text-white/70 font-mono">{t("noStatementThisMonth")}</p>
                                 )}
                             </div>
 
@@ -228,7 +232,7 @@ export function RealCard({
                                     href={`/dashboard/finances/cards/${id}`}
                                     className="w-full h-8 rounded-lg text-xs font-medium font-mono text-white bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center gap-1.5 transition-all shadow-xs"
                                 >
-                                    <span>Ver Detalle</span>
+                                    <span>{t("viewDetails")}</span>
                                     <ArrowUpRight className="w-3.5 h-3.5" />
                                 </Link>
 
@@ -240,7 +244,7 @@ export function RealCard({
                                             className="w-full h-8 rounded-lg text-xs font-medium font-mono text-white bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs"
                                         >
                                             <RotateCcw className="w-3.5 h-3.5" />
-                                            <span>{isTogglingPaid ? "Actualizando..." : "Reabrir Resumen"}</span>
+                                            <span>{isTogglingPaid ? t("updating") : t("reopenStatement")}</span>
                                         </button>
                                     ) : (
                                         <div className="w-full">

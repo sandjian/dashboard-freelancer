@@ -14,6 +14,7 @@ import { useFormScrollOnError } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 import { Banknote, CalendarClock, CreditCard as CardIcon, Wallet } from 'lucide-react';
 import { PaymentMethodSelector } from '@/components/ui/payment-method-selector';
+import { useTranslations } from 'next-intl';
 
 export function CreateExpenseForm({
   vendors,
@@ -32,6 +33,7 @@ export function CreateExpenseForm({
   };
   onSuccess?: () => void;
 }) {
+  const t = useTranslations('Expenses');
   const initialState: ExpenseState = { message: null, errors: {} };
   const [state, formAction] = useActionState<ExpenseState, FormData>(createExpense, initialState);
   const [mode, setMode] = useState<'single' | 'recurring'>('single');
@@ -42,10 +44,10 @@ export function CreateExpenseForm({
 
   const getFrequencyLabel = (freq: string) => {
     switch (freq) {
-      case 'daily': return 'Diaria';
-      case 'weekly': return 'Semanal';
-      case 'monthly': return 'Mensual';
-      case 'yearly': return 'Anual';
+      case 'daily': return t('frequencyDaily');
+      case 'weekly': return t('frequencyWeekly');
+      case 'monthly': return t('frequencyMonthly');
+      case 'yearly': return t('frequencyYearly');
       default: return freq;
     }
   };
@@ -71,13 +73,13 @@ export function CreateExpenseForm({
               value="single"
               className="rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
             >
-              Gasto Único
+              {t('singleExpenseTab')}
             </TabsTrigger>
             <TabsTrigger
               value="recurring"
               className="rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
             >
-              Gasto Fijo / Recurrente
+              {t('recurringExpenseTab')}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -85,7 +87,7 @@ export function CreateExpenseForm({
         {/* 2. TOGGLE: PERSONAL vs NEGOCIO */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
-            Destino del Gasto
+            {t('expenseDestination')}
           </Label>
           <div className="grid grid-cols-2 gap-2 p-1 bg-muted/40 border border-border rounded-xl">
             <button
@@ -99,7 +101,7 @@ export function CreateExpenseForm({
               )}
             >
               <span>🏠</span>
-              <span>Personal / Hogar</span>
+              <span>{t('destinationPersonal')}</span>
             </button>
             <button
               type="button"
@@ -112,14 +114,14 @@ export function CreateExpenseForm({
               )}
             >
               <span>🏢</span>
-              <span>Negocio / Agencia</span>
+              <span>{t('destinationBusiness')}</span>
             </button>
           </div>
         </div>
 
         {/* 3. MONTO */}
         <div className="relative group">
-          <Label htmlFor="amount" className="sr-only">Monto</Label>
+          <Label htmlFor="amount" className="sr-only">{t('amountLabel')}</Label>
           <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-light text-muted-foreground group-focus-within:text-foreground transition-colors pointer-events-none">$</span>
           <Input
             id="amount"
@@ -140,11 +142,11 @@ export function CreateExpenseForm({
 
         {/* 4. CONCEPTO */}
         <div className="space-y-1.5">
-          <Label htmlFor="concept" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Concepto</Label>
+          <Label htmlFor="concept" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('conceptLabel')}</Label>
           <Input
             id="concept"
             name="concept"
-            placeholder={entityType === 'business' ? "ej. Pauta Meta Ads, Canva Pro, Hosting..." : "ej. Alquiler, Supermercado, Farmacia..."}
+            placeholder={entityType === 'business' ? t('conceptPlaceholderBusiness') : t('conceptPlaceholderPersonal')}
             defaultValue={initialValues?.concept}
             className="bg-background border-input text-foreground focus:border-primary h-11 rounded-xl px-4"
           />
@@ -155,7 +157,7 @@ export function CreateExpenseForm({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="expense_date" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
-              Fecha
+              {t('dateLabel')}
             </Label>
             <DatePicker
               name="expense_date"
@@ -165,10 +167,10 @@ export function CreateExpenseForm({
           </div>
 
           <div className="space-y-1.5 w-full">
-            <Label htmlFor="category_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Categoría</Label>
+            <Label htmlFor="category_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('categoryLabel')}</Label>
             <Select name="category_id" defaultValue={initialValues?.category_id}>
               <SelectTrigger className="bg-background border-input text-foreground rounded-xl w-full py-5 hover:bg-muted/50">
-                <SelectValue placeholder="Seleccionar" />
+                <SelectValue placeholder={t('categorySelectPlaceholder')} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground">
                 {categories.map((cat) => (
@@ -179,10 +181,10 @@ export function CreateExpenseForm({
           </div>
 
           <div className="space-y-1.5 w-full">
-            <Label htmlFor="vendor_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Proveedor</Label>
+            <Label htmlFor="vendor_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('vendorLabel')}</Label>
             <Select name="vendor_id">
               <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full py-5 hover:bg-muted/50">
-                <SelectValue placeholder="Opcional" />
+                <SelectValue placeholder={t('vendorOptionalPlaceholder')} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground">
                 {vendors.map((v) => (
@@ -201,16 +203,16 @@ export function CreateExpenseForm({
               {/* Selector de métodos reales de caja */}
               <div className="space-y-1.5 md:col-span-2">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
-                  Método de Pago
+                  {t('paymentMethodLabel')}
                 </Label>
                 <PaymentMethodSelector
                   value={paymentMethod}
                   onChange={setPaymentMethod}
                   className="grid-cols-3 gap-2"
                   methods={[
-                    { id: 'debit_card', label: 'Débito', description: 'Inmediato', icon: <CardIcon className="w-4 h-4" /> },
-                    { id: 'transfer', label: 'Transferencia', description: 'App / Banco', icon: <Wallet className="w-4 h-4" /> },
-                    { id: 'cash', label: 'Efectivo', description: 'En mano', icon: <Banknote className="w-4 h-4" /> },
+                    { id: 'debit_card', label: t('methodDebit'), description: t('methodImmediate'), icon: <CardIcon className="w-4 h-4" /> },
+                    { id: 'transfer', label: t('methodTransferFull'), description: t('methodAppBank'), icon: <Wallet className="w-4 h-4" /> },
+                    { id: 'cash', label: t('methodCash'), description: t('methodInHand'), icon: <Banknote className="w-4 h-4" /> },
                   ]}
                 />
               </div>
@@ -218,20 +220,20 @@ export function CreateExpenseForm({
               {/* Selector de Estado */}
               {mode === 'single' ? (
                 <div className="space-y-1.5">
-                  <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Estado</Label>
+                  <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('tableStatus')}</Label>
                   <Select name="status" defaultValue="paid">
                     <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
-                      <SelectItem value="paid" className="text-emerald-500 font-medium focus:bg-muted">Pagado</SelectItem>
-                      <SelectItem value="pending" className="text-amber-500 font-medium focus:bg-muted">Pendiente</SelectItem>
+                      <SelectItem value="paid" className="text-emerald-500 font-medium focus:bg-muted">{t('statusPaid')}</SelectItem>
+                      <SelectItem value="pending" className="text-amber-500 font-medium focus:bg-muted">{t('statusPending')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Frecuencia</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('frequencyLabel')}</Label>
                   <Select name="frequency" defaultValue="monthly">
                     <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full">
                       <SelectValue />
@@ -262,7 +264,7 @@ export function CreateExpenseForm({
           type="submit"
           className="w-full md:w-auto"
         >
-          {mode === 'recurring' ? 'Crear Plantilla Fija' : 'Registrar Gasto'}
+          {mode === 'recurring' ? t('createFixedTemplate') : t('createExpense')}
         </AnimatedSubmitButton>
       </div>
     </form>

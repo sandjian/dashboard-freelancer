@@ -23,8 +23,10 @@ import { transferBetweenAccounts } from '@/lib/actions';
 import { BankAccount } from '@/lib/definitions';
 import { formatCurrency } from '@/lib/utils';
 import { ArrowLeftRight, Loader2, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
+    const t = useTranslations('Banks');
     const [open, setOpen] = useState(false);
     const [fromAccountId, setFromAccountId] = useState<string>('');
     const [toAccountId, setToAccountId] = useState<string>('');
@@ -55,7 +57,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
         setError(null);
 
         if (!fromAccountId || !toAccountId || !amount || Number(amount) <= 0) {
-            setError('Completa todos los campos obligatorios.');
+            setError(t('requiredFieldsError'));
             return;
         }
 
@@ -70,7 +72,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                 await transferBetweenAccounts(formData);
                 handleOpenChange(false);
             } catch (err: unknown) {
-                setError(err instanceof Error ? err.message : 'Error al procesar la transferencia.');
+                setError(err instanceof Error ? err.message : t('transferError'));
             }
         });
     };
@@ -80,10 +82,10 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
             <DialogTrigger asChild>
                 <Button
                     size="sm"
-                    className="h-10 px-4 rounded-xl text-xs font-semibold bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background border border-border shadow-sm transition-colors gap-2"
+                    className="h-10 px-4 rounded-xl text-xs font-semibold bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background border border-border shadow-sm transition-colors gap-2 cursor-pointer"
                 >
                     <ArrowLeftRight className="w-4 h-4" />
-                    <span>Nueva Transferencia</span>
+                    <span>{t('newTransfer')}</span>
                 </Button>
             </DialogTrigger>
 
@@ -91,10 +93,10 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <ArrowLeftRight className="w-5 h-5 text-primary" />
-                        Transferencia entre Cuentas
+                        {t('transferModalTitle')}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-muted-foreground">
-                        Mueve dinero entre tus cuentas o billeteras sin computar gastos ni alterar tu patrimonio global.
+                        {t('transferModalDesc')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -108,7 +110,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                     {/* Cuenta Origen */}
                     <div className="space-y-1.5">
                         <Label htmlFor="from-account" className="text-xs text-muted-foreground">
-                            Cuenta de Origen (Sale dinero)
+                            {t('fromAccountLabel')}
                         </Label>
                         <Select
                             value={fromAccountId}
@@ -118,7 +120,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                             }}
                         >
                             <SelectTrigger id="from-account" className="w-full">
-                                <SelectValue placeholder="Seleccionar origen" />
+                                <SelectValue placeholder={t('selectOrigin')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {accounts.map((acc) => (
@@ -140,7 +142,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                     {/* Cuenta Destino */}
                     <div className="space-y-1.5">
                         <Label htmlFor="to-account" className="text-xs text-muted-foreground">
-                            Cuenta de Destino (Entra dinero)
+                            {t('toAccountLabel')}
                         </Label>
                         <Select
                             value={toAccountId}
@@ -148,7 +150,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                             disabled={!fromAccountId}
                         >
                             <SelectTrigger id="to-account" className="w-full">
-                                <SelectValue placeholder={fromAccountId ? "Seleccionar destino" : "Primero elige el origen"} />
+                                <SelectValue placeholder={fromAccountId ? t('selectDestination') : t('firstSelectOrigin')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {eligibleDestinationAccounts.map((acc) => (
@@ -170,7 +172,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                     {/* Monto */}
                     <div className="space-y-1.5">
                         <Label htmlFor="transfer-amount" className="text-xs text-muted-foreground">
-                            Monto a Transferir {selectedFrom ? `(${selectedFrom.currency})` : ''}
+                            {t('transferAmountLabel', { currency: selectedFrom ? `(${selectedFrom.currency})` : '' })}
                         </Label>
                         <Input
                             id="transfer-amount"
@@ -187,12 +189,12 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                     {/* Nota opcional */}
                     <div className="space-y-1.5">
                         <Label htmlFor="transfer-notes" className="text-xs text-muted-foreground">
-                            Nota o Motivo (Opcional)
+                            {t('notesLabel')}
                         </Label>
                         <Input
                             id="transfer-notes"
                             type="text"
-                            placeholder="Ej: Fondeo de Mercado Pago, Extracción cajero..."
+                            placeholder={t('notesPlaceholder')}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             className="text-xs"
@@ -207,7 +209,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                             onClick={() => handleOpenChange(false)}
                             disabled={isPending}
                         >
-                            Cancelar
+                            {t('cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -220,7 +222,7 @@ export function TransferModal({ accounts }: { accounts: BankAccount[] }) {
                             ) : (
                                 <Check className="w-3.5 h-3.5" />
                             )}
-                            Confirmar Transferencia
+                            {t('confirmTransfer')}
                         </Button>
                     </div>
                 </form>

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useTranslations } from "next-intl";
 
 const COLORS = [
     'var(--chart-1)',
@@ -18,14 +19,16 @@ interface CategoryStat {
 }
 
 export function ExpensesCategoryChart({ data }: { data: CategoryStat[] }) {
+    const t = useTranslations('Expenses');
+
     if (!data || data.length === 0) {
         return (
             <Card className="bg-transparent border-0 shadow-none h-full">
                 <CardHeader className="p-0 pb-4">
-                    <CardTitle className="text-sm font-semibold text-foreground">Distribución por Categoría</CardTitle>
+                    <CardTitle className="text-sm font-semibold text-foreground">{t('distributionByCategory')}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-center h-[250px]">
-                    <p className="text-sm text-muted-foreground">No hay datos para mostrar.</p>
+                    <p className="text-sm text-muted-foreground">{t('noDistributionData')}</p>
                 </CardContent>
             </Card>
         );

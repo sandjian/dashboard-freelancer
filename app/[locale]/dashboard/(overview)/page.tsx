@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/auth-guard';
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import {
   fetchDashboardData,
   fetchVendors,
@@ -58,6 +59,8 @@ export default async function Page({
     fetchUpcomingDues(),
   ]);
 
+  const t = await getTranslations('Overview');
+
   const runwayMonths = Math.floor(dashboardData.metrics.runway);
   const runwayDecimal = (dashboardData.metrics.runway).toFixed(1);
 
@@ -75,41 +78,41 @@ export default async function Page({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {/* KPI 1: Liquidez Disponible */}
         <TranslucentImpactCard
-          title="Liquidez Disponible"
+          title={t("availableLiquidity")}
           value={formatCurrency(dashboardData.metrics.totalBankARS)}
           subtitle={
             dashboardData.metrics.totalBankUSD > 0
               ? `+ USD ${dashboardData.metrics.totalBankUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })}`
-              : "Saldo total en cuentas bancarias"
+              : "ARS / USD"
           }
-          trend="Cuentas activas"
+          trend={t("activeAccounts")}
           icon={Wallet}
         />
 
         {/* KPI 2: Ingresos del Mes */}
         <TranslucentImpactCard
-          title="Ingresos del Mes"
+          title={t("monthlyIncome")}
           value={formatCurrency(invoiceStats.facturadoAmount)}
-          subtitle={`Cobrado vs. ${formatCurrency(invoiceStats.pendienteAmount)} pend.`}
-          trend={`${invoiceStats.facturadoCount} cobradas`}
+          subtitle={`${t("billedVsPending")} ${formatCurrency(invoiceStats.pendienteAmount)}`}
+          trend={`${invoiceStats.facturadoCount} ${t("billedVsPending").split(" ")[0].toLowerCase()}`}
           icon={TrendingUp}
         />
 
         {/* KPI 3: Egresos del Mes */}
         <TranslucentImpactCard
-          title="Egresos del Mes"
+          title={t("monthlyExpenses")}
           value={formatCurrency(expenseStats.totalAmount)}
-          subtitle={`Fijos: ${formatCurrency(expenseStats.recurringAmount)}`}
-          trend={`${expenseStats.totalCount} gastos`}
+          subtitle={`${t("fixedCostBase")}: ${formatCurrency(expenseStats.recurringAmount)}`}
+          trend={`${expenseStats.totalCount} ${t("monthlyExpenses").toLowerCase()}`}
           icon={TrendingDown}
         />
 
         {/* KPI 4: Runway Operativo */}
         <TranslucentImpactCard
-          title="Runway Operativo"
-          value={`${runwayDecimal} meses`}
-          subtitle={`Burn rate prom: ${formatCurrency(dashboardData.metrics.burnRate)}/mes`}
-          trend="Cobertura estimada"
+          title={t("runway")}
+          value={`${runwayDecimal} ${t("projectedMonths")}`}
+          subtitle={`Burn rate: ${formatCurrency(dashboardData.metrics.burnRate)}`}
+          trend={t("projectedMonths")}
           icon={Timer}
         />
       </div>

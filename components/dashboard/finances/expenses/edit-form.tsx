@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { CreditCard as CardIcon, Banknote, CalendarClock, Wallet } from 'lucide-react';
 import { PaymentMethodSelector } from '@/components/ui/payment-method-selector';
 import { AnimatedSubmitButton } from '@/components/ui/animated-submit-button';
+import { useTranslations } from 'next-intl';
 
 export function EditExpenseForm({
   expense,
@@ -28,6 +29,7 @@ export function EditExpenseForm({
   categories: Category[];
   cards?: CreditCard[];
 }) {
+  const t = useTranslations('Expenses');
   const initialState: ExpenseState = { message: null, errors: {} };
   const updateExpenseWithId = updateExpense.bind(null, expense.id as string);
   const [state, formAction] = useActionState(updateExpenseWithId, initialState);
@@ -40,10 +42,10 @@ export function EditExpenseForm({
   // Labels Helpers
   const getFrequencyLabel = (freq: string) => {
     switch (freq) {
-      case 'daily': return 'Diaria';
-      case 'weekly': return 'Semanal';
-      case 'monthly': return 'Mensual';
-      case 'yearly': return 'Anual';
+      case 'daily': return t('frequencyDaily');
+      case 'weekly': return t('frequencyWeekly');
+      case 'monthly': return t('frequencyMonthly');
+      case 'yearly': return t('frequencyYearly');
       default: return freq;
     }
   };
@@ -64,10 +66,10 @@ export function EditExpenseForm({
         >
           <TabsList className="grid w-full grid-cols-2 bg-muted p-1 mb-6 border border-border rounded-xl">
             <TabsTrigger value="single" className="rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all">
-              Gasto Único
+              {t('singleExpenseTab')}
             </TabsTrigger>
             <TabsTrigger value="recurring" className="rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all">
-              Gasto Recurrente
+              {t('recurringExpenseTabShort')}
             </TabsTrigger>
           </TabsList>
 
@@ -75,7 +77,7 @@ export function EditExpenseForm({
 
             {/* --- ROW 1: AMOUNT --- */}
             <div className="relative group">
-              <Label htmlFor="amount" className="sr-only">Monto</Label>
+              <Label htmlFor="amount" className="sr-only">{t('amountLabel')}</Label>
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-light text-muted-foreground group-focus-within:text-foreground transition-colors pointer-events-none">$</span>
               <Input
                 id="amount"
@@ -96,11 +98,11 @@ export function EditExpenseForm({
 
             {/* --- ROW 2: CONCEPT --- */}
             <div className="space-y-1.5">
-              <Label htmlFor="concept" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Concepto</Label>
+              <Label htmlFor="concept" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('conceptLabel')}</Label>
               <Input
                 id="concept"
                 name="concept"
-                placeholder="Descripción del gasto..."
+                placeholder={t('conceptPlaceholderGeneric')}
                 defaultValue={expense.concept}
                 className="bg-background border-input text-foreground focus:border-primary h-11 rounded-xl px-4"
               />
@@ -109,16 +111,9 @@ export function EditExpenseForm({
 
             {/* --- ROW 3: DATE / CATEGORY / VENDOR --- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-              {/* Date - Using 'expenseDate' as defined in old form, or 'expense_date' if I assume create form is standard. 
-                  OLD FORM used: name="expenseDate". 
-                  CREATE FORM uses: name="expense_date".
-                  I will check lib/definitions if poss, but barring that, I will stick to OLD FORM name for safety to avoid breakage,
-                  OR better, assuming I am refactoring, I should ensure it matches action.
-                  I'll use 'expenseDate' to match the previous Edit Form to be safe about the update action. */}
               <div className="space-y-1.5">
                 <Label htmlFor="date" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
-                  Fecha
+                  {t('dateLabel')}
                 </Label>
                 <DatePicker
                   name="date"
@@ -129,10 +124,10 @@ export function EditExpenseForm({
 
               {/* Category */}
               <div className="space-y-1.5 w-full">
-                <Label htmlFor="category_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Categoría</Label>
+                <Label htmlFor="category_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('categoryLabel')}</Label>
                 <Select name="category_id" defaultValue={expense.category_id?.toString()}>
                   <SelectTrigger className="bg-background border-input text-foreground rounded-xl w-full py-5 hover:bg-muted/50">
-                    <SelectValue placeholder="Categoría" />
+                    <SelectValue placeholder={t('categoryLabel')} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-foreground">
                     {categories.map((cat) => (
@@ -144,10 +139,10 @@ export function EditExpenseForm({
 
               {/* Vendor */}
               <div className="space-y-1.5 w-full">
-                <Label htmlFor="vendor_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Proveedor</Label>
+                <Label htmlFor="vendor_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('vendorLabel')}</Label>
                 <Select name="vendor_id" defaultValue={expense.vendor_id?.toString()}>
                   <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full py-5 hover:bg-muted/50">
-                    <SelectValue placeholder="Opcional" />
+                    <SelectValue placeholder={t('vendorOptionalPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-foreground">
                     {vendors.map((v) => (
@@ -165,17 +160,17 @@ export function EditExpenseForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
 
                   <div className="space-y-1 h-full col-span-1 md:col-span-2 lg:col-span-1">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Método de Pago</Label>
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('paymentMethodLabel')}</Label>
                     <input type="hidden" name="payment_method" value={paymentMethod} />
                     <PaymentMethodSelector
                       value={paymentMethod}
                       onChange={setPaymentMethod}
                       className="grid-cols-1 sm:grid-cols-2 gap-2"
                       methods={[
-                        { id: 'cash', label: 'Efectivo', description: 'Pago en mano', icon: <Banknote className="w-4 h-4" /> },
-                        { id: 'debit_card', label: 'Débito', description: 'Descuento inmediato', icon: <CardIcon className="w-4 h-4" /> },
-                        { id: 'credit_card', label: 'Crédito', description: 'Pago diferido/cuotas', icon: <CardIcon className="w-4 h-4" /> },
-                        { id: 'transfer', label: 'Transferencia', description: 'Bancaria / App', icon: <Wallet className="w-4 h-4" /> },
+                        { id: 'cash', label: t('methodCash'), description: t('methodInHand'), icon: <Banknote className="w-4 h-4" /> },
+                        { id: 'debit_card', label: t('methodDebit'), description: t('methodImmediate'), icon: <CardIcon className="w-4 h-4" /> },
+                        { id: 'credit_card', label: t('methodCredit'), description: t('cardAndInstallments'), icon: <CardIcon className="w-4 h-4" /> },
+                        { id: 'transfer', label: t('methodTransferFull'), description: t('methodAppBank'), icon: <Wallet className="w-4 h-4" /> },
                       ]}
                     />
                   </div>
@@ -184,7 +179,7 @@ export function EditExpenseForm({
                   {paymentMethod === 'credit_card' && cards ? (
                     <div className="space-y-1 animate-in fade-in slide-in-from-left-2 h-full ">
                       <Label htmlFor="card_id" className="text-xs font-semibold text-primary uppercase tracking-wider ml-1 flex items-center gap-1">
-                        <CardIcon className="w-3 h-3" /> Tarjeta & Cuotas
+                        <CardIcon className="w-3 h-3" /> {t('cardAndInstallments')}
                       </Label>
                       <div className="flex gap-2">
                         <Select name="card_id" defaultValue={expense.card_id?.toString()}>
@@ -214,23 +209,15 @@ export function EditExpenseForm({
                   ) : (
                     mode === 'single' ? (
                       <div className="space-y-1">
-                        <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Estado</Label>
-                        {/* Old form supported 'facturado', 'pendiente', 'vencido'. Create form supports 'paid', 'pending'. 
-                             I should check which values to use. Old form values: facturado, pendiente, vencido.
-                             New form: paid, pending.
-                             I will use OLD FORM values to be safe: 'facturado' | 'pendiente' | 'vencido'.
-                             BUT Create form labels them "Pagado" (paid) / "Pendiente" (pending).
-                             I'll assume 'paid' maps to 'facturado' or similar. 
-                             Actually, let's use the values found in EditForm: 'facturado', 'pendiente', 'vencido'.
-                             And update labels. */}
+                        <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('tableStatus')}</Label>
                         <Select name="status" defaultValue={expense.status || "pendiente"}>
                           <SelectTrigger className="bg-background border-input text-foreground h-10 rounded-lg w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-popover border-border text-foreground">
-                            <SelectItem value="facturado" className="text-emerald-500 focus:bg-muted">Facturado / Pagado</SelectItem>
-                            <SelectItem value="pendiente" className="text-amber-500 focus:bg-muted">Pendiente</SelectItem>
-                            <SelectItem value="vencido" className="text-destructive focus:bg-muted">Vencido</SelectItem>
+                            <SelectItem value="facturado" className="text-emerald-500 focus:bg-muted">{t('statusPaid')}</SelectItem>
+                            <SelectItem value="pendiente" className="text-amber-500 focus:bg-muted">{t('statusPending')}</SelectItem>
+                            <SelectItem value="vencido" className="text-destructive focus:bg-muted">{t('statusOverdue')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -248,7 +235,7 @@ export function EditExpenseForm({
                   <CalendarClock className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="frequency" className="text-foreground font-medium">Frecuencia de Repetición</Label>
+                  <Label htmlFor="frequency" className="text-foreground font-medium">{t('frequencyLabel')}</Label>
                   <Select name="frequency" defaultValue="monthly">
                     <SelectTrigger className="bg-background border-input text-foreground h-9 rounded-lg">
                       <SelectValue />
@@ -269,7 +256,7 @@ export function EditExpenseForm({
 
       <div className="flex justify-end pt-4 mt-auto border-t border-border">
         <AnimatedSubmitButton type="submit" className="w-full md:w-auto">
-          Actualizar Gasto
+          {t('updateExpense')}
         </AnimatedSubmitButton>
       </div>
     </form>

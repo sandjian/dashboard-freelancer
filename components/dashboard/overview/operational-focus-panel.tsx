@@ -3,7 +3,8 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
+import { getDateFnsLocale } from "@/lib/date-locale";
 import { CalendarEvent } from "@/lib/definitions";
 import { UpcomingDueItem } from "@/lib/data";
 import { toggleTaskStatus } from "@/lib/actions/agenda";
@@ -30,6 +31,9 @@ export function OperationalFocusPanel({
     todayEvents,
     upcomingDues,
 }: OperationalFocusPanelProps) {
+    const locale = useLocale();
+    const t = useTranslations("Overview");
+    const dateLocale = getDateFnsLocale(locale);
     const [isPending, startTransition] = useTransition();
 
     const handleToggleTask = (event: CalendarEvent) => {
@@ -49,9 +53,13 @@ export function OperationalFocusPanel({
                             <CalendarDays className="w-4 h-4" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-semibold text-foreground tracking-tight">Foco de Hoy</h3>
+                            <h3 className="text-sm font-semibold text-foreground tracking-tight">{t("operationalFocus")}</h3>
                             <p className="text-[11px] text-muted-foreground capitalize">
-                                {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+                                {format(
+                                    new Date(),
+                                    locale === "es" ? "EEEE d 'de' MMMM" : "EEEE, MMMM d",
+                                    { locale: dateLocale }
+                                )}
                             </p>
                         </div>
                     </div>
@@ -59,17 +67,14 @@ export function OperationalFocusPanel({
                         href="/dashboard/agenda"
                         className="text-xs font-semibold text-foreground hover:underline transition-all flex items-center gap-1"
                     >
-                        <span>Ver Agenda</span>
+                        <span>{t("viewAll")}</span>
                         <ArrowRight className="w-3 h-3" />
                     </Link>
                 </div>
 
                 {todayEvents.length === 0 ? (
                     <div className="p-4 rounded-xl bg-muted/20 border border-dashed border-border text-center">
-                        <p className="text-xs font-medium text-foreground">Agenda despejada</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                            No tienes tareas pendientes programadas para hoy.
-                        </p>
+                        <p className="text-xs font-medium text-foreground">{t("noPendingTasks")}</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -128,21 +133,21 @@ export function OperationalFocusPanel({
                         <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                             <Clock className="w-4 h-4" />
                         </div>
-                        <h3 className="text-sm font-semibold text-foreground tracking-tight">Próximos Vencimientos</h3>
+                        <h3 className="text-sm font-semibold text-foreground tracking-tight">{t("upcomingDuesTitle")}</h3>
                     </div>
                     <Link
                         href="/dashboard/finances/invoices?status=pendiente"
                         className="text-xs font-semibold text-foreground hover:underline transition-all"
                     >
-                        Ver todos
+                        {t("viewAllDues")}
                     </Link>
                 </div>
 
                 {upcomingDues.length === 0 ? (
                     <div className="p-4 rounded-xl bg-muted/20 border border-dashed border-border text-center">
-                        <p className="text-xs font-medium text-foreground">Sin vencimientos cercanos</p>
+                        <p className="text-xs font-medium text-foreground">{t("noUpcomingDues")}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                            Todos tus pagos y cobros se encuentran al día.
+                            {t("allDuesClear")}
                         </p>
                     </div>
                 ) : (
@@ -180,12 +185,12 @@ export function OperationalFocusPanel({
                                                         : "border-border text-muted-foreground bg-card"
                                                 )}
                                             >
-                                                {item.isOverdue ? "Vencido" : isInvoice ? "Por cobrar" : "A pagar"}
+                                                {item.isOverdue ? t("statusOverdue", { defaultValue: "Vencido" }) : isInvoice ? t("toCollect") : t("toPay")}
                                             </Badge>
                                         </div>
 
                                         <span className="text-[10px] font-mono text-muted-foreground">
-                                            {format(new Date(item.dueDate), "dd MMM")}
+                                            {format(new Date(item.dueDate), "dd MMM", { locale: dateLocale })}
                                         </span>
                                     </div>
                                 </Link>

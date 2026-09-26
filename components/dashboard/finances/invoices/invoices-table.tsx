@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations, getLocale } from 'next-intl/server';
 import {
   Table,
   TableBody,
@@ -40,16 +41,18 @@ export async function InvoicesTable({
   status: string;
   accounts?: BankAccount[];
 }) {
-  const [totalPages, invoices, fallbackAccounts] = await Promise.all([
+  const [totalPages, invoices, fallbackAccounts, t, locale] = await Promise.all([
     fetchInvoicesPages(query, year, month, status),
     fetchFilteredInvoices(query, currentPage, year, month, status),
     !accounts ? fetchBankAccounts() : Promise.resolve([]),
+    getTranslations('Invoices'),
+    getLocale(),
   ]);
 
   const bankAccounts = accounts && accounts.length > 0 ? accounts : fallbackAccounts;
 
   function formatDate(date: Date) {
-    return new Date(date).toLocaleDateString('es-AR', {
+    return new Date(date).toLocaleDateString(locale === 'es' ? 'es-AR' : 'en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -57,7 +60,7 @@ export async function InvoicesTable({
   }
 
   function formatTime(date: Date) {
-    return new Date(date).toLocaleTimeString('es-AR', {
+    return new Date(date).toLocaleTimeString(locale === 'es' ? 'es-AR' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -66,7 +69,7 @@ export async function InvoicesTable({
   if (invoices.length === 0) {
     return (
       <div className="rounded-md border border-border/40 p-8 text-center text-muted-foreground">
-        No se encontraron facturas para el período seleccionado.
+        {t('noInvoicesFound')}
       </div>
     );
   }
@@ -79,19 +82,19 @@ export async function InvoicesTable({
           <TableHeader className="bg-muted/10 sticky top-0 z-10 border-b border-border/30 backdrop-blur-sm">
             <TableRow className="border-border/30 hover:bg-transparent">
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6">
-                Cliente
+                {t('tableClient')}
               </TableHead>
               <TableHead className="hidden sm:table-cell text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Emisión
+                {t('tableIssue')}
               </TableHead>
               <TableHead className="hidden md:table-cell text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Vencimiento
+                {t('tableDue')}
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                Estado
+                {t('tableStatus')}
               </TableHead>
               <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pr-3 sm:pr-6">
-                Monto
+                {t('tableAmount')}
               </TableHead>
               {/* Ancho fijo estrecho para que el botón de los 3 puntos quede siempre pegado al margen derecho */}
               <TableHead className="w-[44px] py-3.5 pr-3 sm:pr-6 text-right">
@@ -186,7 +189,9 @@ export async function InvoicesTable({
                             !isPaid && !isPending && !isOverdue && "bg-neutral-400 dark:bg-zinc-600"
                           )}
                         />
-                        <span className="translate-y-[-0.5px]">{invoice.status}</span>
+                        <span className="translate-y-[-0.5px]">
+                          {isPaid ? t('statusPaid') : isOverdue ? t('statusOverdue') : t('statusPending')}
+                        </span>
                       </span>
 
                       {/* Botón rápido para cobrar cuando esté pendiente */}

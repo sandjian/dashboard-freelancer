@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useFormStatus } from "react-dom"
+import { useTranslations } from "next-intl"
 import { CalendarEvent, Client } from "@/lib/definitions"
 import { createEvent, deleteEvent } from "@/lib/actions/agenda"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns"
 import { Loader2 } from "lucide-react"
 
-function SubmitButton({ isEdit }: { isEdit: boolean }) {
+function SubmitButton({ isEdit, t }: { isEdit: boolean; t: (key: string) => string }) {
     const { pending } = useFormStatus()
     return (
         <Button
@@ -22,7 +23,7 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
             className="text-xs font-semibold bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background transition-colors"
         >
             {pending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-            {isEdit ? "Guardar Cambios" : "Crear Evento"}
+            {isEdit ? t("saveChanges") : t("createEventButton")}
         </Button>
     )
 }
@@ -40,6 +41,7 @@ export function EventDialog({
     eventToEdit?: CalendarEvent | null;
     clients?: Client[];
 }) {
+    const t = useTranslations("Agenda");
     const defaultStart = selectedDate ? new Date(selectedDate) : new Date();
     defaultStart.setHours(9, 0, 0, 0); // Default 9 AM
 
@@ -48,10 +50,10 @@ export function EventDialog({
             <DialogContent className="sm:max-w-[480px] bg-card border-border text-foreground">
                 <DialogHeader>
                     <DialogTitle className="text-base font-bold text-foreground">
-                        {eventToEdit ? 'Editar Evento / Nota' : 'Nueva Tarea, Cita o Nota'}
+                        {eventToEdit ? t("dialogEditTitle") : t("dialogCreateTitle")}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-muted-foreground">
-                        {eventToEdit ? 'Actualiza los datos del evento o tarea seleccionada.' : 'Registra una cita con cliente, recordatorio o nota en tu agenda.'}
+                        {eventToEdit ? t("dialogEditDesc") : t("dialogCreateDesc")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -63,13 +65,13 @@ export function EventDialog({
                     {/* Título */}
                     <div className="space-y-1.5">
                         <Label htmlFor="title" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Título *
+                            {t("fieldTitle")}
                         </Label>
                         <Input
                             id="title"
                             name="title"
                             defaultValue={eventToEdit?.title}
-                            placeholder="Ej: Reunión kickoff, Llamada de seguimiento..."
+                            placeholder={t("fieldTitlePlaceholder")}
                             className="text-xs bg-background border-border"
                             required
                         />
@@ -79,33 +81,33 @@ export function EventDialog({
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="type" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Tipo de Actividad
+                                {t("fieldType")}
                             </Label>
                             <Select name="type" defaultValue={eventToEdit?.type || "meeting"}>
                                 <SelectTrigger className="w-full text-xs bg-background border-border">
-                                    <SelectValue placeholder="Seleccionar tipo" />
+                                    <SelectValue placeholder={t("fieldType")} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-border text-foreground">
-                                    <SelectItem value="meeting">Reunión / Cita</SelectItem>
-                                    <SelectItem value="task">Tarea Accionable</SelectItem>
-                                    <SelectItem value="reminder">Nota / Recordatorio</SelectItem>
+                                    <SelectItem value="meeting">{t("typeMeeting")}</SelectItem>
+                                    <SelectItem value="task">{t("typeTask")}</SelectItem>
+                                    <SelectItem value="reminder">{t("typeReminder")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <div className="space-y-1.5">
                             <Label htmlFor="priority" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Prioridad
+                                {t("fieldPriority")}
                             </Label>
                             <Select name="priority" defaultValue={eventToEdit?.priority || "medium"}>
                                 <SelectTrigger className="w-full text-xs bg-background border-border">
-                                    <SelectValue placeholder="Prioridad" />
+                                    <SelectValue placeholder={t("fieldPriority")} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-border text-foreground">
-                                    <SelectItem value="low">Baja</SelectItem>
-                                    <SelectItem value="medium">Media</SelectItem>
-                                    <SelectItem value="high">Alta</SelectItem>
-                                    <SelectItem value="urgent">Urgente</SelectItem>
+                                    <SelectItem value="low">{t("priorityLow")}</SelectItem>
+                                    <SelectItem value="medium">{t("priorityMedium")}</SelectItem>
+                                    <SelectItem value="high">{t("priorityHigh")}</SelectItem>
+                                    <SelectItem value="urgent">{t("priorityUrgent")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -114,17 +116,17 @@ export function EventDialog({
                     {/* Cliente Asociado (Opcional) */}
                     <div className="space-y-1.5">
                         <Label htmlFor="related_client_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Vincular Cliente (Opcional)
+                            {t("fieldClient")}
                         </Label>
                         <Select
                             name="related_client_id"
                             defaultValue={eventToEdit?.related_client_id || "none"}
                         >
                             <SelectTrigger className="w-full text-xs bg-background border-border">
-                                <SelectValue placeholder="Sin cliente vinculado" />
+                                <SelectValue placeholder={t("clientPlaceholder")} />
                             </SelectTrigger>
                             <SelectContent className="bg-card border-border text-foreground max-h-56">
-                                <SelectItem value="none">Sin vincular (General)</SelectItem>
+                                <SelectItem value="none">{t("clientNone")}</SelectItem>
                                 {clients.map((c) => (
                                     <SelectItem key={c.id} value={c.id}>
                                         {c.name} {c.brand ? `(${c.brand})` : ''}
@@ -138,7 +140,7 @@ export function EventDialog({
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="start_time" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Inicio
+                                {t("fieldStart")}
                             </Label>
                             <Input
                                 id="start_time"
@@ -152,7 +154,7 @@ export function EventDialog({
 
                         <div className="space-y-1.5">
                             <Label htmlFor="end_time" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Fin
+                                {t("fieldEnd")}
                             </Label>
                             <Input
                                 id="end_time"
@@ -168,12 +170,12 @@ export function EventDialog({
                     {/* Notas / Descripción */}
                     <div className="space-y-1.5">
                         <Label htmlFor="description" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Notas & Detalles
+                            {t("fieldNotes")}
                         </Label>
                         <Textarea
                             id="description"
                             name="description"
-                            placeholder="Agrega contexto, enlaces a videollamadas, o detalles de la tarea..."
+                            placeholder={t("fieldNotesPlaceholder")}
                             defaultValue={eventToEdit?.description || ''}
                             className="text-xs bg-background border-border min-h-[70px]"
                         />
@@ -186,14 +188,14 @@ export function EventDialog({
                                 variant="destructive"
                                 size="sm"
                                 onClick={async () => {
-                                    if (confirm('¿Eliminar este evento?')) {
+                                    if (confirm(t("confirmDeleteEvent"))) {
                                         await deleteEvent(eventToEdit.id);
                                         onOpenChange(false);
                                     }
                                 }}
                                 className="text-xs"
                             >
-                                Eliminar
+                                {t("deleteEventButton")}
                             </Button>
                         ) : <div />}
 
@@ -205,9 +207,9 @@ export function EventDialog({
                                 onClick={() => onOpenChange(false)}
                                 className="text-xs"
                             >
-                                Cancelar
+                                {t("cancelButton")}
                             </Button>
-                            <SubmitButton isEdit={!!eventToEdit} />
+                            <SubmitButton isEdit={!!eventToEdit} t={t} />
                         </div>
                     </DialogFooter>
                 </form>

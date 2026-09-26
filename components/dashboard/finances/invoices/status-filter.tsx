@@ -1,34 +1,10 @@
 'use client';
 
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CheckCircleIcon, ClockIcon, XCircleIcon, ListFilter } from 'lucide-react';
-
-const statuses = [
-  {
-    name: 'Facturado',
-    value: 'facturado',
-    icon: CheckCircleIcon,
-    className: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-    activeClassName: "bg-primary text-primary-foreground shadow-xs"
-  },
-  {
-    name: 'Pendiente',
-    value: 'pendiente',
-    icon: ClockIcon,
-    className: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-    activeClassName: "bg-secondary text-secondary-foreground shadow-xs border border-border"
-  },
-  {
-    name: 'Vencido',
-    value: 'vencido',
-    icon: XCircleIcon,
-    className: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-    activeClassName: "bg-destructive text-destructive-foreground shadow-xs"
-  },
-];
-
 import {
   Select,
   SelectContent,
@@ -38,9 +14,34 @@ import {
 } from '@/components/ui/select';
 
 export function StatusButtons() {
+  const t = useTranslations('Invoices');
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+
+  const statuses = [
+    {
+      name: t('filterPaid'),
+      value: 'facturado',
+      icon: CheckCircleIcon,
+      className: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+      activeClassName: "bg-primary text-primary-foreground shadow-xs"
+    },
+    {
+      name: t('filterPending'),
+      value: 'pendiente',
+      icon: ClockIcon,
+      className: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+      activeClassName: "bg-secondary text-secondary-foreground shadow-xs border border-border"
+    },
+    {
+      name: t('filterOverdue'),
+      value: 'vencido',
+      icon: XCircleIcon,
+      className: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+      activeClassName: "bg-destructive text-destructive-foreground shadow-xs"
+    },
+  ];
 
   const activeStatus = searchParams.get('status') || '';
 
@@ -72,12 +73,12 @@ export function StatusButtons() {
           <SelectTrigger className="w-full h-10 bg-background border-border rounded-xl text-xs text-foreground">
             <div className="flex items-center gap-2">
               <ListFilter className="w-3.5 h-3.5 text-muted-foreground" />
-              <SelectValue placeholder="Filtrar por estado" />
+              <SelectValue placeholder={t('allStatuses')} />
             </div>
           </SelectTrigger>
           <SelectContent className="bg-card border-border">
             <SelectItem value="all" className="text-xs">
-              Todos los estados
+              {t('allStatuses')}
             </SelectItem>
             {statuses.map((status) => (
               <SelectItem key={status.value} value={status.value} className="text-xs">
@@ -103,7 +104,7 @@ export function StatusButtons() {
           )}
         >
           <ListFilter className="mr-1.5 h-3.5 w-3.5" />
-          Todos
+          {t('filterAll')}
         </Button>
 
         {statuses.map((status) => {

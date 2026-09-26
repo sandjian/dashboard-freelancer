@@ -3,11 +3,13 @@ import { TopClientsChart } from "./top-clients-chart"
 import { Users, AlertOctagon, Zap } from "lucide-react"
 import Link from "next/link"
 import { OverdueInvoicesList } from "./overdue-invoices-list"
+import { getTranslations } from "next-intl/server"
 
 export async function InvoicesSidePanel({ year, month }: { year: number, month: number }) {
-    const [topClients, overdueInvoices] = await Promise.all([
+    const [topClients, overdueInvoices, t] = await Promise.all([
         fetchTopClients(year, month, 5),
-        fetchOverdueInvoices(5)
+        fetchOverdueInvoices(5),
+        getTranslations('Invoices')
     ]);
 
     return (
@@ -18,15 +20,15 @@ export async function InvoicesSidePanel({ year, month }: { year: number, month: 
                     <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                         <Zap className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Alertas</h3>
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('alertsTitle')}</h3>
                 </div>
 
                 <div className="space-y-2">
                     <div className="p-3.5 rounded-xl bg-muted/40 border border-border">
                         <p className="text-xs text-muted-foreground leading-relaxed">
                             {overdueInvoices.length > 0
-                                ? `Tienes ${overdueInvoices.length} facturas vencidas. Considera enviar recordatorios de pago a tus clientes.`
-                                : "No tienes alertas críticas. Mantén tus cobros al día."}
+                                ? t('alertsOverdueMessage', { count: overdueInvoices.length })
+                                : t('alertsAllClear')}
                         </p>
                     </div>
                 </div>
@@ -38,7 +40,7 @@ export async function InvoicesSidePanel({ year, month }: { year: number, month: 
                     <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                         <Users className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Top Clientes</h3>
+                    <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('topClientsTitle')}</h3>
                 </div>
                 <div className="flex-1 min-h-0">
                     <TopClientsChart data={topClients.map(c => ({ name: c.name, value: Number(c.value) }))} />
@@ -52,11 +54,11 @@ export async function InvoicesSidePanel({ year, month }: { year: number, month: 
                         <div className="p-2 rounded-xl bg-secondary/40 hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground text-secondary-foreground dark:text-background transition-colors">
                             <AlertOctagon className="w-4 h-4" />
                         </div>
-                        <h3 className="text-sm font-semibold text-foreground tracking-tight">Vencidas</h3>
+                        <h3 className="text-sm font-semibold text-foreground tracking-tight">{t('overdueTitle')}</h3>
                     </div>
                     {overdueInvoices.length > 0 && (
                         <Link href="/dashboard/finances/invoices?status=vencido" className="text-xs font-semibold text-foreground hover:underline transition-all">
-                            Ver todas
+                            {t('viewAll')}
                         </Link>
                     )}
                 </div>

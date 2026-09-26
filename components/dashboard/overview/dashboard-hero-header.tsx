@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Plus, Receipt, CreditCard, CalendarPlus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ export function DashboardHeroHeader({
     cards,
     clients,
 }: DashboardHeroHeaderProps) {
+    const t = useTranslations("Overview");
     const [expenseOpen, setExpenseOpen] = useState(false);
     const [eventOpen, setEventOpen] = useState(false);
 
@@ -38,13 +40,13 @@ export function DashboardHeroHeader({
                 <div className="space-y-1.5 w-full xl:w-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
                         <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />
-                        <span>Resumen Financiero</span>
+                        <span>{t("financialSummaryBadge")}</span>
                     </div>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground font-sans">
-                        Salud Financiera
+                        {t("heroTitle")}
                     </h1>
                     <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-                        Control general de liquidez, flujo operativo mensual y compromisos inmediatos.
+                        {t("heroDescription")}
                     </p>
                 </div>
 
@@ -63,7 +65,7 @@ export function DashboardHeroHeader({
                             >
                                 <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
                                     <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                                    <span>Registrar</span>
+                                    <span>{t("register")}</span>
                                     <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5" />
                                 </div>
                             </Button>
@@ -72,7 +74,7 @@ export function DashboardHeroHeader({
                             <DropdownMenuItem asChild className="cursor-pointer text-xs py-2">
                                 <Link href="/dashboard/finances/invoices/create" className="flex items-center gap-2">
                                     <Receipt className="w-4 h-4 text-muted-foreground" />
-                                    <span>Nueva Factura</span>
+                                    <span>{t("newInvoice")}</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -80,14 +82,14 @@ export function DashboardHeroHeader({
                                 className="cursor-pointer text-xs py-2 flex items-center gap-2"
                             >
                                 <CreditCard className="w-4 h-4 text-muted-foreground" />
-                                <span>Nuevo Gasto</span>
+                                <span>{t("newExpense")}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => setEventOpen(true)}
                                 className="cursor-pointer text-xs py-2 flex items-center gap-2"
                             >
                                 <CalendarPlus className="w-4 h-4 text-muted-foreground" />
-                                <span>Nuevo Evento / Tarea</span>
+                                <span>{t("newEvent")}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

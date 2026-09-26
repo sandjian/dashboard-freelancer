@@ -22,30 +22,32 @@ import {
 import { createBankAccount } from '@/lib/actions';
 import { Plus, Landmark, Wallet, Banknote, DollarSign, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const ACCOUNT_TYPES = [
-    { value: 'bank', label: 'Banco Tradicional', icon: Landmark },
-    { value: 'wallet', label: 'Billetera Virtual', icon: Wallet },
-    { value: 'cash', label: 'Efectivo / Caja', icon: Banknote },
-    { value: 'usd_account', label: 'Cuenta en USD', icon: DollarSign },
-];
-
-const PRESET_COLORS = [
-    { label: 'Esmeralda', value: '#10b981' },
-    { label: 'Azul', value: '#3b82f6' },
-    { label: 'Violeta', value: '#8b5cf6' },
-    { label: 'Ámbar', value: '#f59e0b' },
-    { label: 'Rosa', value: '#ec4899' },
-    { label: 'Cinc', value: '#71717a' },
-];
+import { useTranslations } from 'next-intl';
 
 export function CreateAccountModal() {
+    const t = useTranslations('Banks');
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [accountType, setAccountType] = useState('bank');
     const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
     const [color, setColor] = useState('#10b981');
     const [error, setError] = useState<string | null>(null);
+
+    const accountTypes = [
+        { value: 'bank', label: t('typeTraditional'), icon: Landmark },
+        { value: 'wallet', label: t('typeWallet'), icon: Wallet },
+        { value: 'cash', label: t('typeCash'), icon: Banknote },
+        { value: 'usd_account', label: t('typeUSD'), icon: DollarSign },
+    ];
+
+    const presetColors = [
+        { label: t('colorEmerald'), value: '#10b981' },
+        { label: t('colorBlue'), value: '#3b82f6' },
+        { label: t('colorPurple'), value: '#8b5cf6' },
+        { label: t('colorAmber'), value: '#f59e0b' },
+        { label: t('colorPink'), value: '#ec4899' },
+        { label: t('colorZinc'), value: '#71717a' },
+    ];
 
     const handleTypeChange = (type: string) => {
         setAccountType(type);
@@ -65,10 +67,10 @@ export function CreateAccountModal() {
         startTransition(async () => {
             try {
                 await createBankAccount(formData);
-                toast.success('Cuenta registrada con éxito');
+                toast.success(t('accountCreated'));
                 setOpen(false);
             } catch (err: unknown) {
-                const message = err instanceof Error ? err.message : 'Error al registrar la cuenta';
+                const message = err instanceof Error ? err.message : t('accountCreateError');
                 setError(message);
                 toast.error(message);
             }
@@ -83,7 +85,7 @@ export function CreateAccountModal() {
                 >
                     <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
                         <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                        <span>Nueva Cuenta</span>
+                        <span>{t('newAccount')}</span>
                     </div>
                 </Button>
             </DialogTrigger>
@@ -91,10 +93,10 @@ export function CreateAccountModal() {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-foreground font-semibold">
                         <Landmark className="w-5 h-5 text-primary" />
-                        Registrar Cuenta o Fondo
+                        {t('registerAccountTitle')}
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground text-xs">
-                        Agrega un banco, billetera virtual o fondo de efectivo para conciliar saldos.
+                        {t('registerAccountDesc')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -107,12 +109,12 @@ export function CreateAccountModal() {
 
                     <div className="space-y-1.5">
                         <Label htmlFor="acc-name" className="text-xs font-medium text-muted-foreground">
-                            Nombre de la Cuenta / Entidad
+                            {t('accountNameLabel')}
                         </Label>
                         <Input
                             id="acc-name"
                             name="name"
-                            placeholder="Ej. Santander Río, Mercado Pago, Caja Fuerte"
+                            placeholder={t('accountNamePlaceholder')}
                             required
                             autoFocus
                             className="bg-background border-border text-foreground h-10 rounded-xl"
@@ -121,13 +123,13 @@ export function CreateAccountModal() {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground">Tipo de Cuenta</Label>
+                            <Label className="text-xs font-medium text-muted-foreground">{t('accountTypeLabel')}</Label>
                             <Select value={accountType} onValueChange={handleTypeChange}>
                                 <SelectTrigger className="bg-background border-border text-foreground h-10 rounded-xl">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {ACCOUNT_TYPES.map((type) => {
+                                    {accountTypes.map((type) => {
                                         const Icon = type.icon;
                                         return (
                                             <SelectItem key={type.value} value={type.value}>
@@ -143,7 +145,7 @@ export function CreateAccountModal() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground">Moneda</Label>
+                            <Label className="text-xs font-medium text-muted-foreground">{t('currencyLabel')}</Label>
                             <Select
                                 value={currency}
                                 onValueChange={(val: 'ARS' | 'USD') => setCurrency(val)}
@@ -153,8 +155,8 @@ export function CreateAccountModal() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="ARS">Pesos (ARS)</SelectItem>
-                                    <SelectItem value="USD">Dólares (USD)</SelectItem>
+                                    <SelectItem value="ARS">{t('pesosOption')}</SelectItem>
+                                    <SelectItem value="USD">{t('dollarsOption')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -162,7 +164,7 @@ export function CreateAccountModal() {
 
                     <div className="space-y-1.5">
                         <Label htmlFor="acc-balance" className="text-xs font-medium text-muted-foreground">
-                            Saldo Inicial ({currency})
+                            {t('initialBalanceLabel', { currency })}
                         </Label>
                         <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">
@@ -180,9 +182,9 @@ export function CreateAccountModal() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground">Color Identificador</Label>
+                        <Label className="text-xs font-medium text-muted-foreground">{t('colorLabel')}</Label>
                         <div className="flex items-center gap-2 flex-wrap">
-                            {PRESET_COLORS.map((c) => (
+                            {presetColors.map((c) => (
                                 <button
                                     key={c.value}
                                     type="button"
@@ -205,7 +207,7 @@ export function CreateAccountModal() {
                             onClick={() => setOpen(false)}
                             className="rounded-xl"
                         >
-                            Cancelar
+                            {t('cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -213,7 +215,7 @@ export function CreateAccountModal() {
                             className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold gap-2"
                         >
                             {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                            <span>{isPending ? 'Guardando...' : 'Crear Cuenta'}</span>
+                            <span>{isPending ? t('saving') : t('createAccount')}</span>
                         </Button>
                     </div>
                 </form>

@@ -15,6 +15,7 @@ import { CardAlerts, CardAlertItem } from '@/components/dashboard/finances/cards
 import { CardWithStatement } from '@/lib/definitions';
 import { formatCurrency } from '@/lib/utils';
 import { TranslucentImpactCard } from '@/components/dashboard/finances/invoices/translucent-impact-card';
+import { getTranslations } from 'next-intl/server';
 
 export default async function CardsPage() {
   const user = await requireUser();
@@ -23,11 +24,12 @@ export default async function CardsPage() {
   const month = today.getMonth() + 1;
   const currentDay = today.getDate();
 
-  const [cardsWithStatements, globalActivity, spendingDistribution, bankAccounts] = await Promise.all([
+  const [cardsWithStatements, globalActivity, spendingDistribution, bankAccounts, t] = await Promise.all([
     fetchCardsWithMonthlyStatement(year, month),
     fetchGlobalCardActivity(6),
     fetchCardSpendingDistribution(year, month),
     fetchBankAccounts(),
+    getTranslations('Cards'),
   ]);
 
   // 1. Cálculo de KPIs directos desde card_statements
@@ -70,8 +72,8 @@ export default async function CardsPage() {
     if (closingDiff >= 0 && closingDiff <= 3) {
       alerts.push({
         type: 'info',
-        title: `Cierre inminente: ${card.name}`,
-        description: closingDiff === 0 ? "Cierra HOY. Evita usarla si quieres patear el gasto al mes subsiguiente." : `Cierra en ${closingDiff} días.`,
+        title: t('imminentClosing', { card: card.name }),
+        description: closingDiff === 0 ? t('closesTodayDescription') : t('closesInDaysDescription', { days: closingDiff }),
         date: new Date(year, month - 1, card.closing_day)
       });
     }
@@ -80,8 +82,8 @@ export default async function CardsPage() {
     if (dueDiff >= 0 && dueDiff <= 5 && card.statement?.status !== 'paid') {
       alerts.push({
         type: 'warning',
-        title: `Vencimiento próximo: ${card.name}`,
-        description: dueDiff === 0 ? "Vence HOY. ¡Pagar resumen!" : `Vence en ${dueDiff} días.`,
+        title: t('upcomingDue', { card: card.name }),
+        description: dueDiff === 0 ? t('dueTodayDescription') : t('dueInDaysDescription', { days: dueDiff }),
         date: new Date(year, month - 1, card.due_day)
       });
     }
@@ -100,13 +102,13 @@ export default async function CardsPage() {
           <div className="space-y-1.5 w-full xl:w-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-secondary/40 dark:bg-secondary/20 text-secondary-foreground mb-1 border border-border">
               <Sparkles className="w-3.5 h-3.5 text-accent dark:text-secondary-foreground" />
-              <span>Financiación & Crédito</span>
+              <span>{t('badge')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground/80 font-sans">
-              Tarjetas de Crédito
+              {t('heroTitle')}
             </h1>
             <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              Control de resúmenes mensuales, cierres, vencimientos y estrategia de uso.
+              {t('heroDescription')}
             </p>
           </div>
 
@@ -118,7 +120,7 @@ export default async function CardsPage() {
               <Link href="/dashboard/finances/cards/create">
                 <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
                   <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                  <span>Nueva Tarjeta</span>
+                  <span>{t('newCard')}</span>
                 </div>
               </Link>
             </Button>
@@ -134,10 +136,10 @@ export default async function CardsPage() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-mono">
-                  Estrategia de Financiación Recomendada
+                  {t('recommendedStrategyTitle')}
                 </div>
                 <div className="text-sm font-medium text-foreground mt-0.5">
-                  Hoy te conviene pagar con <strong className="text-foreground font-bold">{bestCard.name}</strong>. Cerró hace {maxDaysSinceClosing} días; cualquier nueva compra ingresará en el resumen siguiente.
+                  {t('recommendedStrategyDescription', { card: bestCard.name, days: maxDaysSinceClosing })}
                 </div>
               </div>
             </div>
@@ -147,26 +149,26 @@ export default async function CardsPage() {
         {/* KPIs Grid: 1 column on < lg, 3 columns on lg+ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 pt-6 relative z-10">
           <TranslucentImpactCard
-            title="A Pagar Este Mes"
+            title={t('dueThisMonth')}
             value={formatCurrency(totalDueThisMonth)}
-            subtitle={pendingCount > 0 ? `${pendingCount} con resumen pendiente` : 'Todas al día'}
-            trend={`Mes ${month}/${year}`}
+            subtitle={pendingCount > 0 ? t('cardsPendingCount', { count: pendingCount }) : t('allUpToDate')}
+            trend={t('monthTrend', { month, year })}
             icon={CreditCard}
           />
 
           <TranslucentImpactCard
-            title="Pagado Este Mes"
+            title={t('paidThisMonth')}
             value={formatCurrency(totalPaidThisMonth)}
-            subtitle="Total liquidado del período"
-            trend="Liquidado"
+            subtitle={t('paidThisMonthSubtitle')}
+            trend={t('settledTrend')}
             icon={CheckCircle2}
           />
 
           <TranslucentImpactCard
-            title="Estado de Resúmenes"
-            value={totalDueThisMonth === 0 ? "Al día" : "Pendientes"}
-            subtitle={totalDueThisMonth === 0 ? "No hay resúmenes pendientes de pago" : "Existen resúmenes por abonar"}
-            trend={totalDueThisMonth === 0 ? "OK" : "Atención"}
+            title={t('statementStatus')}
+            value={totalDueThisMonth === 0 ? t('statusUpToDate') : t('statusPending')}
+            subtitle={totalDueThisMonth === 0 ? t('noPendingStatements') : t('statementsToPay')}
+            trend={totalDueThisMonth === 0 ? t('trendOk') : t('trendAttention')}
             icon={totalDueThisMonth === 0 ? CheckCircle2 : AlertTriangle}
           />
         </div>
@@ -179,11 +181,11 @@ export default async function CardsPage() {
         <div className="xl:col-span-5 space-y-6">
           <div className="flex items-center justify-between pb-2 border-b border-border">
             <div>
-              <h2 className="text-lg font-bold text-foreground">Tus Plásticos</h2>
-              <p className="text-xs text-muted-foreground">Listado de tarjetas configuradas y estado de sus resúmenes</p>
+              <h2 className="text-lg font-bold text-foreground">{t('yourPlastics')}</h2>
+              <p className="text-xs text-muted-foreground">{t('yourPlasticsSubtitle')}</p>
             </div>
             <span className="text-xs font-mono text-muted-foreground">
-              {cardsWithStatements.length} {cardsWithStatements.length === 1 ? 'tarjeta' : 'tarjetas'}
+              {cardsWithStatements.length} {cardsWithStatements.length === 1 ? t('cardCountSingular') : t('cardCountPlural')}
             </span>
           </div>
 
@@ -208,12 +210,12 @@ export default async function CardsPage() {
             ) : (
               <div className="col-span-full py-16 flex flex-col items-center justify-center border border-dashed border-border rounded-[var(--radius)] bg-card/40">
                 <CreditCard className="w-10 h-10 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground text-sm mb-4">No tienes tarjetas asociadas.</p>
+                <p className="text-muted-foreground text-sm mb-4">{t('noAssociatedCards')}</p>
                 <Button
                   asChild
                   className="bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background font-semibold rounded-xl border border-border shadow-sm h-10 px-5"
                 >
-                  <Link href="/dashboard/finances/cards/create">Agregar Primera Tarjeta</Link>
+                  <Link href="/dashboard/finances/cards/create">{t('addFirstCard')}</Link>
                 </Button>
               </div>
             )}
@@ -225,7 +227,7 @@ export default async function CardsPage() {
           {alerts.length > 0 && (
             <div className="space-y-3">
               <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground font-mono">
-                Avisos Importantes
+                {t('importantAlerts')}
               </h3>
               <CardAlerts alerts={alerts} />
             </div>

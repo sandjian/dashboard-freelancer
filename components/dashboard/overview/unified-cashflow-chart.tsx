@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/chart"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatCurrency } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 interface UnifiedCashFlowChartProps {
     data: {
@@ -29,13 +30,15 @@ interface UnifiedCashFlowChartProps {
 }
 
 export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartProps) {
+    const t = useTranslations("Overview");
+
     const chartConfig = {
         income: {
-            label: "Ingresos",
+            label: t("income"),
             color: "var(--foreground)",
         },
         expense: {
-            label: "Egresos",
+            label: t("expenses"),
             color: "var(--muted-foreground)",
         },
     } satisfies ChartConfig
@@ -55,11 +58,11 @@ export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartPro
                             <TrendingUp className="w-4 h-4" />
                         </div>
                         <h3 className="text-sm font-semibold text-foreground tracking-tight">
-                            Flujo de Caja (Cash Flow)
+                            {t("cashFlowTitle")}
                         </h3>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Comparativa histórica de ingresos cobrados vs. gastos operativos
+                        {t("cashFlowDescription")}
                     </p>
                 </div>
 
@@ -74,7 +77,7 @@ export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartPro
                                 : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Ambos
+                        {t("both")}
                     </button>
                     <button
                         onClick={() => setActiveSeries("income")}
@@ -85,7 +88,7 @@ export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartPro
                                 : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Ingresos
+                        {t("income")}
                     </button>
                     <button
                         onClick={() => setActiveSeries("expense")}
@@ -96,7 +99,7 @@ export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartPro
                                 : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Egresos
+                        {t("expenses")}
                     </button>
                 </div>
             </div>
@@ -106,7 +109,7 @@ export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartPro
                 <div className="pr-4">
                     <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
                         <ArrowUpRight className="w-3.5 h-3.5 text-foreground" />
-                        Total Ingresos (Período)
+                        {t("totalIncomePeriod")}
                     </span>
                     <p className="text-lg font-bold font-mono text-foreground mt-0.5">
                         {formatCurrency(totalIncome)}
@@ -115,7 +118,7 @@ export function UnifiedCashFlowChart({ data, baseline }: UnifiedCashFlowChartPro
                 <div className="pl-4">
                     <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
                         <ArrowDownRight className="w-3.5 h-3.5 text-muted-foreground" />
-                        Total Egresos (Período)
+                        {t("totalExpensesPeriod")}
                     </span>
                     <p className="text-lg font-bold font-mono text-muted-foreground mt-0.5">
                         {formatCurrency(totalExpense)}

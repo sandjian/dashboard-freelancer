@@ -6,18 +6,7 @@ import { ClientProfileHeader } from '@/components/dashboard/finances/clients/cli
 import { ClientStats } from '@/components/dashboard/finances/clients/client-stats';
 import { ClientRevenueChart } from '@/components/dashboard/finances/clients/client-revenue-chart';
 import { ClientAgendaCard } from '@/components/dashboard/finances/clients/client-agenda-card';
-
-export async function generateMetadata({
-  params
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params;
-  const data = await fetchClientDetailsById(id);
-  return {
-    title: data?.client ? `${data.client.name} | Clientes` : 'Cliente | Dashboard',
-  };
-}
+import { getTranslations } from 'next-intl/server';
 
 export default async function ClientDetailsPage({
   params
@@ -26,6 +15,7 @@ export default async function ClientDetailsPage({
 }) {
   const user = await requireUser();
   const { id } = await params;
+  const t = await getTranslations('Clients');
 
   const [data, revenueHistory, calendarEvents] = await Promise.all([
     fetchClientDetailsById(id),
@@ -51,8 +41,8 @@ export default async function ClientDetailsPage({
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-border">
           <div>
-            <h2 className="text-lg font-bold text-foreground">Actividad & Finanzas</h2>
-            <p className="text-xs text-muted-foreground">Evolución de recaudación y citas programadas con el cliente</p>
+            <h2 className="text-lg font-bold text-foreground">{t('activityFinances')}</h2>
+            <p className="text-xs text-muted-foreground">{t('activityFinancesSubtitle')}</p>
           </div>
         </div>
 
@@ -73,11 +63,11 @@ export default async function ClientDetailsPage({
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between pb-2 border-b border-border">
           <div>
-            <h2 className="text-lg font-bold text-foreground">Historial de Facturas</h2>
-            <p className="text-xs text-muted-foreground">Listado de comprobantes emitidos, cobros y vencimientos</p>
+            <h2 className="text-lg font-bold text-foreground">{t('invoicesHistory')}</h2>
+            <p className="text-xs text-muted-foreground">{t('invoicesHistorySubtitle')}</p>
           </div>
           <span className="text-xs font-mono text-muted-foreground">
-            {invoices.length} {invoices.length === 1 ? 'comprobante' : 'comprobantes'}
+            {invoices.length} {invoices.length === 1 ? t('voucherCountSingular') : t('voucherCountPlural')}
           </span>
         </div>
 

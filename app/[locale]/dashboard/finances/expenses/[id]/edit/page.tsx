@@ -5,17 +5,19 @@ import { EditExpenseForm } from "@/components/dashboard/finances/expenses/edit-f
 // 👇 Importamos fetchCards
 import { fetchExpenseById, fetchExpenseCategories, fetchVendors, fetchCards } from "@/lib/data";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
 
   // 👇 Añadimos fetchCards a la petición en paralelo
-  const [expense, vendors, categories, cards] = await Promise.all([
+  const [expense, vendors, categories, cards, t] = await Promise.all([
     fetchExpenseById(id),
     fetchVendors(),
     fetchExpenseCategories(),
     fetchCards(),
+    getTranslations('Expenses'),
   ]);
 
   if (!expense) {
@@ -24,7 +26,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
-      <h1 className="text-2xl font-semibold mb-4">Editar Gasto</h1>
+      <h1 className="text-2xl font-semibold mb-4">{t('editExpense')}</h1>
       <EditExpenseForm
         expense={expense}
         vendors={vendors}

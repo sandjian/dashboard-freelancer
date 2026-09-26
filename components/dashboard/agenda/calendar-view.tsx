@@ -14,13 +14,15 @@ import {
     subMonths,
     getDay
 } from "date-fns"
-import { es } from "date-fns/locale"
+import { useLocale, useTranslations } from "next-intl"
+import { getDateFnsLocale } from "@/lib/date-locale"
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Clock, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toggleTaskStatus } from "@/lib/actions/agenda"
 
-const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function CalendarView({
     events,
@@ -29,6 +31,11 @@ export function CalendarView({
     events: CalendarEvent[]
     clients?: Client[]
 }) {
+    const t = useTranslations("Agenda");
+    const locale = useLocale();
+    const dateLocale = getDateFnsLocale(locale);
+    const DAYS = locale === "en" ? DAYS_EN : DAYS_ES;
+
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -93,7 +100,7 @@ export function CalendarView({
                 <div className="flex flex-wrap items-center justify-between p-4 border-b border-border/80 bg-muted/20 gap-3">
                     <div className="flex items-center gap-3">
                         <h2 className="text-xl font-bold capitalize text-foreground tracking-tight">
-                            {format(currentMonth, "MMMM yyyy", { locale: es })}
+                            {format(currentMonth, "MMMM yyyy", { locale: dateLocale })}
                         </h2>
                         <div className="flex items-center rounded-lg border border-border/80 bg-background shadow-xs overflow-hidden">
                             <Button
@@ -110,7 +117,7 @@ export function CalendarView({
                                 onClick={navToday}
                                 className="h-8 px-2.5 font-medium text-xs border-x border-border/80 rounded-none text-foreground hover:bg-muted"
                             >
-                                Hoy
+                                {t("todayButton")}
                             </Button>
                             <Button
                                 variant="ghost"
@@ -125,22 +132,22 @@ export function CalendarView({
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-blue-500/80"></span> Reunión
+                            <span className="w-2 h-2 rounded-full bg-blue-500/80"></span> {t("meetingLegend")}
                         </span>
                         <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500/80"></span> Tarea
+                            <span className="w-2 h-2 rounded-full bg-emerald-500/80"></span> {t("taskLegend")}
                         </span>
                         <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-zinc-400"></span> Nota
+                            <span className="w-2 h-2 rounded-full bg-zinc-400"></span> {t("noteLegend")}
                         </span>
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleNewEvent(selectedDate)}
-                            className="h-8 gap-1 text-xs border-border/80 ml-2"
+                            className="h-8 gap-1 text-xs border-border/80 ml-2 cursor-pointer"
                         >
                             <Plus className="w-3.5 h-3.5" />
-                            <span>Crear</span>
+                            <span>{t("createButton")}</span>
                         </Button>
                     </div>
                 </div>
@@ -192,7 +199,7 @@ export function CalendarView({
                                                 {format(date, "d")}
                                             </span>
                                             {isToday && (
-                                                <span className="text-[9px] font-bold text-primary uppercase">Hoy</span>
+                                                <span className="text-[9px] font-bold text-primary uppercase">{t("todayButton")}</span>
                                             )}
                                         </div>
 
@@ -234,7 +241,7 @@ export function CalendarView({
                                             })}
                                             {dayEvents.length > 3 && (
                                                 <p className="text-[10px] text-muted-foreground font-medium pl-1">
-                                                    +{dayEvents.length - 3} más
+                                                    {t("moreEvents", { count: dayEvents.length - 3 })}
                                                 </p>
                                             )}
                                         </div>

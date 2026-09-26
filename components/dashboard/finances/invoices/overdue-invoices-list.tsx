@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedExpandableList } from "@/components/ui/animated-expandable-list";
 import { AlertTriangle, User, Calendar, Mail } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 interface OverdueInvoiceItem {
     id: string;
@@ -14,12 +15,14 @@ interface OverdueInvoiceItem {
 }
 
 export function OverdueInvoicesList({ items }: { items: OverdueInvoiceItem[] }) {
+    const t = useTranslations('Invoices');
+    const locale = useLocale();
 
     return (
         <AnimatedExpandableList
             items={items}
             getKey={(item) => item.id}
-            emptyMessage="No hay facturas vencidas."
+            emptyMessage={t('noOverdueInvoices')}
             renderItem={(item) => {
                 const now = new Date();
                 const due = new Date(item.due_date);
@@ -37,11 +40,11 @@ export function OverdueInvoicesList({ items }: { items: OverdueInvoiceItem[] }) 
                         <div className="flex justify-between items-center mt-1">
                             <div className="flex items-center gap-1">
                                 <Badge variant="outline" className="text-[9px] px-2 py-0.5 border border-destructive/20 text-destructive bg-destructive/10">
-                                    Vencido
+                                    {t('filterOverdue')}
                                 </Badge>
                             </div>
                             <span className="text-[10px] font-medium text-destructive">
-                                Hace {daysOverdue} días
+                                {t('daysAgo', { days: daysOverdue })}
                             </span>
                         </div>
                     </div>
@@ -51,6 +54,8 @@ export function OverdueInvoicesList({ items }: { items: OverdueInvoiceItem[] }) 
                 const now = new Date();
                 const due = new Date(item.due_date);
                 const daysOverdue = Math.ceil((now.getTime() - due.getTime()) / (1000 * 3600 * 24));
+                const formattedDueDate = due.toLocaleDateString(locale === 'es' ? 'es-AR' : 'en-US', { day: 'numeric', month: 'long' });
+                const formattedShortDue = due.toLocaleDateString(locale === 'es' ? 'es-AR' : 'en-US');
 
                 return (
                     <div className="flex flex-col gap-4 p-5 rounded-[var(--radius)] bg-popover border border-border shadow-xl">
@@ -59,14 +64,14 @@ export function OverdueInvoicesList({ items }: { items: OverdueInvoiceItem[] }) 
                                 <AlertTriangle className="h-6 w-6" />
                             </div>
                             <h3 className="text-lg font-bold font-mono text-foreground">{formatCurrency(item.amount)}</h3>
-                            <p className="text-sm text-muted-foreground font-medium">Factura Vencida</p>
+                            <p className="text-sm text-muted-foreground font-medium">{t('overdueInvoice')}</p>
                         </div>
 
                         <div className="space-y-3">
                             <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <User className="h-4 w-4" />
-                                    <span className="text-xs">Cliente</span>
+                                    <span className="text-xs">{t('client')}</span>
                                 </div>
                                 <span className="text-xs font-medium text-foreground">{item.client_name}</span>
                             </div>
@@ -74,16 +79,16 @@ export function OverdueInvoicesList({ items }: { items: OverdueInvoiceItem[] }) 
                             <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Calendar className="h-4 w-4" />
-                                    <span className="text-xs">Fecha Venc.</span>
+                                    <span className="text-xs">{t('dueDate')}</span>
                                 </div>
                                 <span className="text-xs font-medium text-destructive">
-                                    {due.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
+                                    {formattedDueDate}
                                 </span>
                             </div>
 
                             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
                                 <p className="text-xs text-destructive">
-                                    Esta factura tiene {daysOverdue} días de retraso.
+                                    {t('overdueDelayMessage', { days: daysOverdue })}
                                 </p>
                             </div>
                         </div>
@@ -93,17 +98,17 @@ export function OverdueInvoicesList({ items }: { items: OverdueInvoiceItem[] }) 
                                 onClick={onClose}
                                 className="w-full py-2 text-xs font-medium text-muted-foreground bg-transparent hover:bg-muted border border-border rounded-lg transition-colors cursor-pointer"
                             >
-                                Volver
+                                {t('back')}
                             </button>
                             <button
                                 onClick={() => {
-                                    const subject = encodeURIComponent(`Recordatorio de Factura Vencida - ${item.client_name}`);
-                                    const body = encodeURIComponent(`Hola ${item.client_name},\n\nLe escribimos para recordarle que la factura por el monto de ${formatCurrency(item.amount)} con fecha de vencimiento el ${due.toLocaleDateString('es-AR')} se encuentra vencida.\n\nAgradecemos su pronto pago.\n\nSaludos.`);
+                                    const subject = encodeURIComponent(t('claimSubject', { client: item.client_name }));
+                                    const body = encodeURIComponent(t('claimBody', { client: item.client_name, amount: formatCurrency(item.amount), date: formattedShortDue }));
                                     window.location.href = `mailto:?subject=${subject}&body=${body}`;
                                 }}
                                 className="w-full py-2 text-xs font-medium text-destructive-foreground bg-destructive hover:bg-destructive/90 border border-destructive rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                             >
-                                <Mail className="h-3 w-3" /> Reclamar
+                                <Mail className="h-3 w-3" /> {t('claim')}
                             </button>
                         </div>
                     </div>

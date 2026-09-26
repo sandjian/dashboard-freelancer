@@ -34,12 +34,14 @@ import { ClientCardUnified } from "./client-card-unified";
 import { EditClientModal } from "./edit-client-modal";
 import { DeleteClientDialog } from "./delete-client-dialog";
 import type { ClientWithStats } from "@/lib/definitions";
+import { useTranslations } from "next-intl";
 
 interface ClientsExplorerProps {
   clients: ClientWithStats[];
 }
 
 export function ClientsExplorer({ clients }: ClientsExplorerProps) {
+  const t = useTranslations('Clients');
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "up_to_date" | "pending" | "overdue">("all");
@@ -77,7 +79,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar cliente..."
+            placeholder={t('searchPlaceholder')}
             className="pl-9 h-10 bg-background border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground"
           />
         </div>
@@ -97,7 +99,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              Todos ({clients.length})
+              {t('allFilter')} ({clients.length})
             </Button>
             <Button
               variant="ghost"
@@ -110,7 +112,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              Al Día
+              {t('upToDateFilter')}
             </Button>
             <Button
               variant="ghost"
@@ -123,7 +125,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              Pendientes
+              {t('pendingFilter')}
             </Button>
             <Button
               variant="ghost"
@@ -136,7 +138,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              En Mora
+              {t('overdueFilter')}
             </Button>
           </div>
 
@@ -178,8 +180,8 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
       <div className="min-h-[480px] p-4 sm:p-6 bg-card flex flex-col justify-between">
         {filteredClients.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-xl bg-muted/20 text-muted-foreground text-center">
-            <p className="text-sm font-medium">No se encontraron clientes con los filtros seleccionados.</p>
-            <p className="text-xs mt-1">Prueba limpiando la búsqueda o cambiando el filtro de estado.</p>
+            <p className="text-sm font-medium">{t('noClientsFound')}</p>
+            <p className="text-xs mt-1">{t('noClientsFoundPrompt')}</p>
           </div>
         ) : viewMode === "grid" ? (
           /* Grid View inside Canvas - 3 por fila para mayor amplitud y claridad */
@@ -195,22 +197,22 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
               <TableHeader>
                 <TableRow className="border-border/30 hover:bg-transparent bg-muted/10">
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5 pl-4 sm:pl-6">
-                    Cliente
+                    {t('colClient')}
                   </TableHead>
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                    Estado
+                    {t('colStatus')}
                   </TableHead>
                   <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                    Saldo Pendiente
+                    {t('colPendingBalance')}
                   </TableHead>
                   <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                    Total Facturado
+                    {t('colTotalBilled')}
                   </TableHead>
                   <TableHead className="text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3.5">
-                    Facturas
+                    {t('colInvoices')}
                   </TableHead>
                   <TableHead className="w-[88px] py-3.5 pr-4 sm:pr-6 text-right">
-                    <span className="sr-only">Acciones</span>
+                    <span className="sr-only">{t('colActions')}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -275,10 +277,10 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                           />
                           <span>
                             {isOverdue
-                              ? `Mora (${client.overdue_invoices})`
+                              ? `${t('overdueLabel')} (${client.overdue_invoices})`
                               : hasPending
-                              ? `Pendiente (${client.pending_invoices})`
-                              : "Al día"}
+                              ? `${t('pendingLabel')} (${client.pending_invoices})`
+                              : t('upToDate')}
                           </span>
                         </span>
                       </TableCell>
@@ -313,9 +315,9 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                             size="sm"
                             className="h-8 px-2.5 text-xs hover:bg-muted/80 text-foreground font-medium"
                           >
-                            <Link href={`/dashboard/finances/invoices/create?client_id=${client.id}`} title="Nueva Factura">
+                            <Link href={`/dashboard/finances/invoices/create?client_id=${client.id}`} title={t('newInvoice')}>
                               <Plus className="w-3.5 h-3.5 mr-1" />
-                              <span>Facturar</span>
+                              <span>{t('billAction')}</span>
                             </Link>
                           </Button>
 
@@ -325,6 +327,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                aria-label={t('moreOptions')}
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
@@ -332,7 +335,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                             <DropdownMenuContent align="end" className="w-44 bg-card border-border text-foreground">
                               <DropdownMenuItem asChild>
                                 <Link href={`/dashboard/finances/clients/${client.id}`}>
-                                  Ver Perfil
+                                  {t('viewProfile')}
                                 </Link>
                               </DropdownMenuItem>
                               <div onSelect={(e) => e.preventDefault()}>
@@ -346,7 +349,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                                   }}
                                   trigger={
                                     <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-muted text-foreground w-full">
-                                      Editar
+                                      {t('edit')}
                                     </div>
                                   }
                                 />
@@ -358,7 +361,7 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
                                   clientName={client.name}
                                   trigger={
                                     <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-destructive/10 text-destructive w-full">
-                                      Eliminar
+                                      {t('deleteClient')}
                                     </div>
                                   }
                                 />
@@ -377,8 +380,8 @@ export function ClientsExplorer({ clients }: ClientsExplorerProps) {
 
         {/* Footer info strip */}
         <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/30 text-xs text-muted-foreground">
-          <span>Mostrando {filteredClients.length} de {clients.length} clientes</span>
-          <span>Directorio de Clientes</span>
+          <span>{t('showing', { start: filteredClients.length > 0 ? 1 : 0, end: filteredClients.length, total: clients.length })}</span>
+          <span>{t('directoryTitle')}</span>
         </div>
       </div>
     </div>

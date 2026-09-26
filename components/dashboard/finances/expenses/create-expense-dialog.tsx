@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { CreateExpenseForm } from "./create-form";
 import { Vendor, Category, Card } from "@/lib/definitions";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 interface CreateExpenseDialogProps {
@@ -30,6 +31,7 @@ export function CreateExpenseDialog({
     defaultOpen = false,
     triggerClassName,
 }: CreateExpenseDialogProps) {
+    const t = useTranslations('Expenses');
     const [open, setOpen] = useState(defaultOpen);
     const router = useRouter();
     const pathname = usePathname();
@@ -66,15 +68,15 @@ export function CreateExpenseDialog({
                 >
                     <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
                         <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                        <span>Nuevo Gasto</span>
+                        <span>{t('newExpense')}</span>
                     </div>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl bg-card border-border p-4 py-8 text-foreground max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Registrar Gasto</DialogTitle>
+                    <DialogTitle>{t('createExpense')}</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                        Completa los detalles de la transacción.
+                        {t('createExpenseDescription')}
                     </DialogDescription>
                 </DialogHeader>
                 <CreateExpenseForm

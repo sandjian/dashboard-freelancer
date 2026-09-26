@@ -3,6 +3,7 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip, YAxis, TooltipProps } from "recharts"
 import { formatCurrency } from "@/lib/utils"
 import { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent"
+import { useTranslations } from "next-intl"
 
 export interface InvoiceHistoryData {
     name: string;        // Month name (e.g. "Ene")
@@ -10,7 +11,7 @@ export interface InvoiceHistoryData {
     value: number;       // Total amount
 }
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+const CustomTooltip = ({ active, payload, label, netIncomeLabel }: TooltipProps<ValueType, NameType> & { netIncomeLabel?: string }) => {
     if (active && payload && payload.length) {
         return (
             <div className="rounded-[var(--radius-md)] border border-border bg-popover/95 dark:bg-popover/90 p-3 shadow-lg backdrop-blur-md">
@@ -19,7 +20,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
                     <span className="text-sm font-bold font-mono text-foreground">
                         {formatCurrency(Number(payload[0].value))}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Ingreso Neto</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{netIncomeLabel || 'Ingreso Neto'}</span>
                 </div>
             </div>
         )
@@ -28,10 +29,12 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 }
 
 export function InvoicesHistoryChart({ data }: { data: InvoiceHistoryData[] }) {
+    const t = useTranslations('Invoices');
+
     if (!data || data.length === 0) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <p className="text-sm text-muted-foreground">No hay datos históricos disponibles.</p>
+                <p className="text-sm text-muted-foreground">{t('noHistoryData')}</p>
             </div>
         )
     }
@@ -59,7 +62,7 @@ export function InvoicesHistoryChart({ data }: { data: InvoiceHistoryData[] }) {
                     domain={[0, 'auto']}
                 />
                 <Tooltip
-                    content={<CustomTooltip />}
+                    content={<CustomTooltip netIncomeLabel={t('netIncome')} />}
                     cursor={{
                         fill: 'var(--muted)',
                         opacity: 0.35,

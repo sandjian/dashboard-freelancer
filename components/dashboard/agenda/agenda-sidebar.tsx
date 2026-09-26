@@ -3,7 +3,8 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { format, isSameDay } from "date-fns";
-import { es } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
+import { getDateFnsLocale } from "@/lib/date-locale";
 import { CalendarEvent, Client } from "@/lib/definitions";
 import { toggleTaskStatus } from "@/lib/actions/agenda";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ export function AgendaSidebar({
     onNewEvent,
     onEditEvent,
 }: AgendaSidebarProps) {
+    const t = useTranslations("Agenda");
+    const locale = useLocale();
+    const dateLocale = getDateFnsLocale(locale);
     const [isPending, startTransition] = useTransition();
 
     const isToday = isSameDay(selectedDate, new Date());
@@ -61,14 +65,14 @@ export function AgendaSidebar({
     const getPriorityDot = (priority?: string) => {
         switch (priority) {
             case "urgent":
-                return <span className="w-2 h-2 rounded-full bg-foreground shadow-sm shrink-0" title="Urgente" />;
+                return <span className="w-2 h-2 rounded-full bg-foreground shadow-sm shrink-0" title={t("priorityUrgent")} />;
             case "high":
-                return <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-300 shrink-0" title="Alta" />;
+                return <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-300 shrink-0" title={t("priorityHigh")} />;
             case "medium":
-                return <span className="w-2 h-2 rounded-full bg-zinc-500/70 shrink-0" title="Media" />;
+                return <span className="w-2 h-2 rounded-full bg-zinc-500/70 shrink-0" title={t("priorityMedium")} />;
             case "low":
             default:
-                return <span className="w-2 h-2 rounded-full bg-zinc-600/40 shrink-0" title="Baja" />;
+                return <span className="w-2 h-2 rounded-full bg-zinc-600/40 shrink-0" title={t("priorityLow")} />;
         }
     };
 
@@ -83,16 +87,20 @@ export function AgendaSidebar({
                     <div>
                         <div className="flex items-center gap-2">
                             <h3 className="text-sm font-semibold text-foreground capitalize">
-                                {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                                {format(
+                                    selectedDate,
+                                    locale === "es" ? "EEEE d 'de' MMMM" : "EEEE, MMMM d",
+                                    { locale: dateLocale }
+                                )}
                             </h3>
                             {isToday && (
                                 <span className="text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                                    Hoy
+                                    {t("todayButton")}
                                 </span>
                             )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {dayEvents.length} {dayEvents.length === 1 ? "actividad" : "actividades"} programadas
+                            {t("scheduledActivities", { count: dayEvents.length })}
                         </p>
                     </div>
                 </div>
@@ -103,7 +111,7 @@ export function AgendaSidebar({
                     className="h-8 gap-1.5 px-3 text-xs font-semibold shrink-0 bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-sm transition-colors cursor-pointer"
                 >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Nueva</span>
+                    <span>{t("newButton")}</span>
                 </Button>
             </div>
 
@@ -114,7 +122,7 @@ export function AgendaSidebar({
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-muted-foreground/70" />
-                            Agenda del Día
+                            {t("dayAgendaTitle")}
                         </span>
                         <span className="text-[11px] text-muted-foreground/80 font-mono">
                             {dayEvents.filter(e => e.status === "completed").length}/{dayEvents.length}
@@ -124,9 +132,9 @@ export function AgendaSidebar({
                     {dayEvents.length === 0 ? (
                         <div className="py-6 px-4 text-center rounded-lg border border-dashed border-border/60 bg-muted/10">
                             <CalendarIcon className="w-7 h-7 mx-auto mb-2 text-muted-foreground/40 stroke-[1.5]" />
-                            <p className="text-xs font-medium text-foreground">Sin actividades para hoy</p>
+                            <p className="text-xs font-medium text-foreground">{t("noActivitiesToday")}</p>
                             <p className="text-[11px] text-muted-foreground mt-0.5">
-                                Haz clic en Nueva para agendar una reunión o tarea
+                                {t("noActivitiesTodayPrompt")}
                             </p>
                         </div>
                     ) : (
@@ -205,7 +213,7 @@ export function AgendaSidebar({
                                                     >
                                                         <User className="w-2.5 h-2.5" />
                                                         <span className="truncate max-w-[140px]">
-                                                            {event.client_name || "Cliente vinculado"}
+                                                             {event.client_name || t("linkedClient")}
                                                         </span>
                                                         <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                                                     </Link>
@@ -224,17 +232,17 @@ export function AgendaSidebar({
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground flex items-center gap-1.5">
                             <FileText className="w-3.5 h-3.5 text-muted-foreground/70" />
-                            Notas & Backlog
+                            {t("notesBacklogTitle")}
                         </span>
                         <span className="text-[11px] text-muted-foreground/80 font-mono">
-                            {backlogItems.length} pendientes
+                            {t("pendingCount", { count: backlogItems.length })}
                         </span>
                     </div>
 
                     {backlogItems.length === 0 ? (
                         <div className="py-4 text-center">
                             <p className="text-xs text-muted-foreground/70">
-                                No hay tareas pendientes en el backlog.
+                                {t("noPendingBacklog")}
                             </p>
                         </div>
                     ) : (
