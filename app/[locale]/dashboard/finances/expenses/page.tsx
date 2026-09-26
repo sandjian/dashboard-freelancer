@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { ExpensesTable } from '@/components/dashboard/finances/expenses/expenses-table';
 import { CreateExpenseDialog } from '@/components/dashboard/finances/expenses/create-expense-dialog';
 import { Suspense } from 'react';
-import { ExpensesTableSkeleton } from '@/components/ui/skeletons';
+import { ExpensesTableSkeleton } from '@/components/dashboard/skeletons';
 import { DateNavigator } from '@/components/dashboard/month-year-selector';
 import { TranslucentImpactCard } from '@/components/dashboard/finances/invoices/translucent-impact-card';
 import { BanknoteIcon, RepeatIcon, ClockIcon, BarChart3, Sparkles } from 'lucide-react';

@@ -11,7 +11,7 @@ import Search from '@/components/ui/search';
 import { Button } from '@/components/ui/button';
 import { InvoicesTable } from '@/components/dashboard/finances/invoices/invoices-table';
 import { TranslucentImpactCard } from '@/components/dashboard/finances/invoices/translucent-impact-card';
-import { InvoicesTableSkeleton } from '@/components/ui/skeletons';
+import { InvoicesTableSkeleton } from '@/components/dashboard/skeletons';
 import { StatusButtons } from '@/components/dashboard/finances/invoices/status-filter';
 import { DateNavigator } from '@/components/dashboard/month-year-selector';
 import { InvoicesHistoryChart, type InvoiceHistoryData } from '@/components/dashboard/finances/invoices/invoices-history-chart';

@@ -1,14 +1,13 @@
 import { requireUser } from '@/lib/auth-guard';
+import { Suspense } from 'react';
 import {
   fetchCardsWithMonthlyStatement,
   fetchGlobalCardActivity,
   fetchCardSpendingDistribution,
-  fetchBankAccounts,
 } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Sparkles, CheckCircle2, AlertTriangle, CreditCard } from 'lucide-react';
-import { RealCard } from '@/components/dashboard/finances/cards/real-card';
 import { CardsSpendingChart } from '@/components/dashboard/finances/cards/cards-spending-chart';
 import { RecentCardActivity } from '@/components/dashboard/finances/cards/recent-card-activity';
 import { CardAlerts, CardAlertItem } from '@/components/dashboard/finances/cards/card-alerts';
@@ -16,19 +15,20 @@ import { CardWithStatement } from '@/lib/definitions';
 import { formatCurrency } from '@/lib/utils';
 import { TranslucentImpactCard } from '@/components/dashboard/finances/invoices/translucent-impact-card';
 import { getTranslations } from 'next-intl/server';
+import { CardsGalleryWrapper } from '@/components/dashboard/finances/cards/cards-gallery-wrapper';
+import { RealCardsGridSkeleton } from '@/components/dashboard/skeletons';
 
 export default async function CardsPage() {
-  const user = await requireUser();
+  await requireUser();
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
   const currentDay = today.getDate();
 
-  const [cardsWithStatements, globalActivity, spendingDistribution, bankAccounts, t] = await Promise.all([
+  const [cardsWithStatements, globalActivity, spendingDistribution, t] = await Promise.all([
     fetchCardsWithMonthlyStatement(year, month),
     fetchGlobalCardActivity(6),
     fetchCardSpendingDistribution(year, month),
-    fetchBankAccounts(),
     getTranslations('Cards'),
   ]);
 
@@ -189,37 +189,9 @@ export default async function CardsPage() {
             </span>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            {cardsWithStatements.length > 0 ? (
-              cardsWithStatements.map((card) => (
-                <div key={card.id} className="flex flex-col">
-                  <RealCard
-                    id={card.id}
-                    name={card.name}
-                    closingDay={card.closing_day}
-                    dueDay={card.due_day}
-                    color={card.color}
-                    last4={card.last_four_digits}
-                    statement={card.statement}
-                    year={year}
-                    month={month}
-                    accounts={bankAccounts}
-                  />
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full py-16 flex flex-col items-center justify-center border border-dashed border-border rounded-[var(--radius)] bg-card/40">
-                <CreditCard className="w-10 h-10 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground text-sm mb-4">{t('noAssociatedCards')}</p>
-                <Button
-                  asChild
-                  className="bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 dark:bg-foreground/90 dark:hover:bg-foreground dark:text-background font-semibold rounded-xl border border-border shadow-sm h-10 px-5"
-                >
-                  <Link href="/dashboard/finances/cards/create">{t('addFirstCard')}</Link>
-                </Button>
-              </div>
-            )}
-          </div>
+          <Suspense fallback={<RealCardsGridSkeleton />}>
+            <CardsGalleryWrapper year={year} month={month} />
+          </Suspense>
         </div>
 
         {/* Sidebar: Alerts, Distribution Chart & Recent Activity */}
@@ -240,4 +212,4 @@ export default async function CardsPage() {
       </div>
     </div>
   );
-}
+}
