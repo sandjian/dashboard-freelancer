@@ -133,7 +133,7 @@ export default function RegisterForm() {
                             size="lg"
                             disabled={isLoading}
                         >
-                            {isLoading ? "Creating account..." : "Create Account"}
+                            <span>{isLoading ? "Creating account..." : "Create Account"}</span>
                         </Button>
                     </form>
 

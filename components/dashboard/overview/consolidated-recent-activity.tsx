@@ -108,7 +108,8 @@ export function ConsolidatedRecentActivity({ activity }: ConsolidatedRecentActiv
 
                                         <TableCell className="py-3 text-right font-mono text-xs font-semibold text-foreground pr-4">
                                             <span className={cn(isInvoice ? "text-foreground" : "text-muted-foreground")}>
-                                                {isInvoice ? "+" : "-"}{formatCurrency(item.amount)}
+                                                <span>{isInvoice ? "+" : "-"}</span>
+                                                <span>{formatCurrency(item.amount)}</span>
                                             </span>
                                         </TableCell>
                                     </TableRow>

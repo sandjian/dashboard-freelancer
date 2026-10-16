@@ -72,7 +72,8 @@ export function RecentActivity({ activity }: { activity: ActivityItem[] }) {
                                 })}
                             </TableCell>
                             <TableCell className={`text-right font-medium ${item.type === 'invoice' ? 'text-success' : 'text-danger'}`}>
-                                {item.type === 'invoice' ? '+' : '-'}{formatCurrency(item.amount)}
+                                <span>{item.type === 'invoice' ? '+' : '-'}</span>
+                                <span>{formatCurrency(item.amount)}</span>
                             </TableCell>
                         </TableRow>
                     ))}

@@ -132,7 +132,7 @@ export function ClientAgendaCard({ events, clientId, clientName }: ClientAgendaC
                         : "bg-secondary/40 text-secondary-foreground dark:bg-foreground/90 dark:text-background border-transparent"
                     )}
                   >
-                    {event.status === 'completed' ? 'Realizada' : isPast ? 'Pasada' : 'Próxima'}
+                    <span>{event.status === 'completed' ? 'Realizada' : isPast ? 'Pasada' : 'Próxima'}</span>
                   </span>
                 </div>
               );

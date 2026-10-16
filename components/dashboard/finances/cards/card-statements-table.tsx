@@ -59,19 +59,23 @@ export function CardStatementsTable({ statements }: { statements: StatementHisto
                                 <TableCell>
                                     {st.status === 'paid' ? (
                                         <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 bg-emerald-500/10 text-xs gap-1">
-                                            <CheckCircle2 className="w-3 h-3" /> Pagado
+                                            <CheckCircle2 className="w-3 h-3" />
+                                            <span>Pagado</span>
                                         </Badge>
                                     ) : st.status === 'partially_paid' ? (
                                         <Badge variant="outline" className="border-amber-500/30 text-amber-500 bg-amber-500/10 text-xs gap-1">
-                                            <Clock className="w-3 h-3" /> Parcial ({formatCurrency(remaining)})
+                                            <Clock className="w-3 h-3" />
+                                            <span>Parcial ({formatCurrency(remaining)})</span>
                                         </Badge>
                                     ) : isOverdue ? (
                                         <Badge variant="outline" className="border-rose-500/30 text-rose-500 bg-rose-500/10 text-xs gap-1">
-                                            <AlertCircle className="w-3 h-3" /> Vencido
+                                            <AlertCircle className="w-3 h-3" />
+                                            <span>Vencido</span>
                                         </Badge>
                                     ) : (
                                         <Badge variant="outline" className="border-blue-500/30 text-blue-500 bg-blue-500/10 text-xs gap-1">
-                                            <Clock className="w-3 h-3" /> Pendiente
+                                            <Clock className="w-3 h-3" />
+                                            <span>Pendiente</span>
                                         </Badge>
                                     )}
                                 </TableCell>
@@ -79,7 +83,8 @@ export function CardStatementsTable({ statements }: { statements: StatementHisto
                                     <div>{formatCurrency(st.totalAmount)}</div>
                                     {st.status === 'partially_paid' && (
                                         <div className="text-[11px] font-normal text-muted-foreground">
-                                            Resta: {formatCurrency(remaining)}
+                                            <span>Resta: </span>
+                                            <span>{formatCurrency(remaining)}</span>
                                         </div>
                                     )}
                                 </TableCell>
@@ -91,7 +96,7 @@ export function CardStatementsTable({ statements }: { statements: StatementHisto
                                         onClick={() => handleToggle(st.id, st.status)}
                                         className="h-8 text-xs font-medium"
                                     >
-                                        {st.status === 'paid' ? 'Desmarcar' : 'Completar Pago'}
+                                        <span>{st.status === 'paid' ? 'Desmarcar' : 'Completar Pago'}</span>
                                     </Button>
                                 </TableCell>
                             </TableRow>

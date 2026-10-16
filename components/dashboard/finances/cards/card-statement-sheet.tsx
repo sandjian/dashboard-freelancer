@@ -64,18 +64,19 @@ export function CardStatementControl({
                 <div className="flex items-center justify-between gap-2">
                     <div>
                         <div className="text-xs text-muted-foreground">
-                            {statement.status === 'partially_paid' ? 'Saldo pendiente' : 'Resumen a pagar'}
+                            <span>{statement.status === 'partially_paid' ? 'Saldo pendiente' : 'Resumen a pagar'}</span>
                         </div>
                         <div className="text-lg font-bold font-mono text-foreground">
                             {formatCurrency(statement.status === 'partially_paid' ? remainingAmount : statement.totalAmount)}
                         </div>
                         {statement.status === 'partially_paid' && (
                             <div className="text-[11px] text-muted-foreground font-mono">
-                                Total: {formatCurrency(statement.totalAmount)} (Pagado: {formatCurrency(statement.paidAmount || 0)})
+                                <span>Total: {formatCurrency(statement.totalAmount)} (Pagado: {formatCurrency(statement.paidAmount || 0)})</span>
                             </div>
                         )}
                         <div className="text-[11px] text-muted-foreground">
-                            Vence: {new Date(statement.dueDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                            <span>Vence: </span>
+                            <span>{new Date(statement.dueDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}</span>
                         </div>
                     </div>
 
@@ -95,7 +96,7 @@ export function CardStatementControl({
                             ) : (
                                 <Clock className="w-3 h-3 mr-1" />
                             )}
-                            {statement.status === 'paid' ? 'Pagado' : statement.status === 'partially_paid' ? 'Pago Parcial' : 'Pendiente'}
+                            <span>{statement.status === 'paid' ? 'Pagado' : statement.status === 'partially_paid' ? 'Pago Parcial' : 'Pendiente'}</span>
                         </Badge>
 
                         {statement.status === 'paid' ? (
@@ -106,7 +107,7 @@ export function CardStatementControl({
                                 onClick={handleTogglePaid}
                                 className="h-7 text-xs text-muted-foreground hover:text-foreground"
                             >
-                                Desmarcar
+                                <span>Desmarcar</span>
                             </Button>
                         ) : (
                             <PayStatementModal

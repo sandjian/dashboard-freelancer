@@ -94,7 +94,7 @@ export function DeleteCardDialog({ cardId, cardName, trigger, open: controlledOp
                         className="bg-destructive text-destructive-foreground hover:text-white hover:bg-red-600"
                         disabled={isDeleting}
                     >
-                        {isDeleting ? "Eliminando..." : "Sí, eliminar y saldar deuda"}
+                        <span>{isDeleting ? "Eliminando..." : "Sí, eliminar y saldar deuda"}</span>
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

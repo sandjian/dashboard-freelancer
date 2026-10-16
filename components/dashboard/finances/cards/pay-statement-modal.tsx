@@ -255,7 +255,10 @@ export function PayStatementModal({
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs shadow-xs"
                         >
                             {isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-                            Confirmar y Debitar {amountToPay > 0 && !isExceedingRemaining ? formatCurrency(amountToPay) : ''}
+                            <span>Confirmar y Debitar</span>
+                            {amountToPay > 0 && !isExceedingRemaining && (
+                                <span> {formatCurrency(amountToPay)}</span>
+                            )}
                         </Button>
                     </div>
                 </div>

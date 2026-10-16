@@ -192,7 +192,7 @@ function SubmitButton() {
             size="lg"
             disabled={pending}
         >
-            {pending ? "Signing in..." : "Log in"}
+            <span>{pending ? "Signing in..." : "Log in"}</span>
         </Button>
     );
 }

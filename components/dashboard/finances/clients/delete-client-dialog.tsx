@@ -68,7 +68,7 @@ export function DeleteClientDialog({
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         disabled={isDeleting}
                     >
-                        {isDeleting ? "Eliminando..." : "Sí, eliminar"}
+                        <span>{isDeleting ? "Eliminando..." : "Sí, eliminar"}</span>
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
