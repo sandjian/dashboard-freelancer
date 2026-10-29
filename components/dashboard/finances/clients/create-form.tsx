@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/actions';
 import type { ClientState, Client } from '@/lib/definitions';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ export function ClientForm({ onSuccess, initialData, action, submitButtonText }:
   submitButtonText?: string;
 }) {
   const t = useTranslations('Clients');
+  const router = useRouter();
   const initialState: ClientState = { message: null, errors: {} };
   // Use the passed action (for edit) or default createClient
   const actionToUse = action || createClient;
@@ -31,11 +33,12 @@ export function ClientForm({ onSuccess, initialData, action, submitButtonText }:
         formRef.current?.reset();
         setImageBase64(''); // Clear image preview on successful creation
       }
+      router.refresh();
       if (onSuccess) onSuccess();
     } else if (state.message) {
       toast.error('Error', { description: state.message });
     }
-  }, [state, onSuccess, initialData, t]);
+  }, [state, onSuccess, initialData, t, router]);
 
   const handleImageChange = (files: File[]) => {
     if (files.length > 0) {
@@ -152,7 +155,7 @@ export function ClientForm({ onSuccess, initialData, action, submitButtonText }:
       </div>
 
       <div aria-live="polite" aria-atomic="true">
-        {state.message && (
+        {state.message && !state.message.includes('éxito') && (
           <p className="mt-2 text-sm text-destructive text-center font-medium bg-destructive/10 p-2 rounded-md border border-destructive/20">{state.message}</p>
         )}
       </div>

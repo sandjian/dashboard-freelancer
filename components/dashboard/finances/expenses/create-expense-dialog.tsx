@@ -13,13 +13,16 @@ import { cn } from "@/lib/utils";
 interface CreateExpenseDialogProps {
     vendors: Vendor[];
     categories: Category[];
-    cards?: Card[]; // Opcional, ya que los gastos directos no usan tarjetas en cuotas
+    cards?: Card[];
     initialValues?: {
         concept?: string;
         category_id?: string;
         amount?: string;
     };
     defaultOpen?: boolean;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    hideTrigger?: boolean;
     triggerClassName?: string;
 }
 
@@ -29,22 +32,32 @@ export function CreateExpenseDialog({
     cards = [],
     initialValues,
     defaultOpen = false,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
+    hideTrigger = false,
     triggerClassName,
 }: CreateExpenseDialogProps) {
     const t = useTranslations('Expenses');
-    const [open, setOpen] = useState(defaultOpen);
+    const [internalOpen, setInternalOpen] = useState(defaultOpen);
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+
     useEffect(() => {
-        if (defaultOpen) {
-            setOpen(true);
+        if (defaultOpen && !isControlled) {
+            setInternalOpen(true);
         }
-    }, [defaultOpen]);
+    }, [defaultOpen, isControlled]);
 
     const handleOpenChange = (isOpen: boolean) => {
-        setOpen(isOpen);
+        if (!isControlled) {
+            setInternalOpen(isOpen);
+        }
+        controlledOnOpenChange?.(isOpen);
+
         if (!isOpen) {
             const params = new URLSearchParams(searchParams.toString());
             if (params.has("action")) {
@@ -59,19 +72,21 @@ export function CreateExpenseDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-                <Button
-                    className={cn(
-                        "relative overflow-hidden bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 hover:border-secondary/30 hover:text-accent dark:hover:text-secondary-foreground shadow-sm font-semibold transition-all duration-300 group h-10 px-5 rounded-xl cursor-pointer w-full sm:w-auto justify-center",
-                        triggerClassName
-                    )}
-                >
-                    <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
-                        <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                        <span>{t('newExpense')}</span>
-                    </div>
-                </Button>
-            </DialogTrigger>
+            {!hideTrigger && (
+                <DialogTrigger asChild>
+                    <Button
+                        className={cn(
+                            "relative overflow-hidden bg-secondary/40 text-secondary-foreground hover:bg-secondary/30 hover:border-secondary/30 hover:text-accent dark:hover:text-secondary-foreground shadow-sm font-semibold transition-all duration-300 group h-10 px-5 rounded-xl cursor-pointer w-full sm:w-auto justify-center",
+                            triggerClassName
+                        )}
+                    >
+                        <div className="flex items-center justify-center gap-2 relative z-10 tracking-wide text-sm font-medium">
+                            <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
+                            <span>{t('newExpense')}</span>
+                        </div>
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-2xl bg-card border-border p-4 py-8 text-foreground max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{t('createExpense')}</DialogTitle>

@@ -25,7 +25,10 @@ export async function deleteClient(clientId: string) {
         `, [clientId, user.id]);
 
         await db.query('COMMIT');
+        revalidatePath('/[locale]/dashboard', 'layout');
         revalidatePath('/dashboard/finances/clients');
+        revalidatePath('/es/dashboard/finances/clients');
+        revalidatePath('/en/dashboard/finances/clients');
         return { message: 'Cliente eliminado correctamente (las facturas se han conservado como "Sin Cliente").' };
     } catch (error) {
         await db.query('ROLLBACK');

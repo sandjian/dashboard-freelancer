@@ -77,7 +77,7 @@ export function DatePicker({
         <input
           type="hidden"
           name={name}
-          value={selectedDate ? selectedDate.toISOString().split('T')[0] : ''}
+          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
         />
       )}
       <Popover open={open} onOpenChange={setOpen}>

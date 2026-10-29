@@ -1,6 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { AnimatedSubmitButton } from '@/components/ui/animated-submit-button';
 import { createExpense } from '@/lib/actions';
 import type { ExpenseState, Vendor, Category, Card as CreditCard } from '@/lib/definitions';
@@ -9,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFormScrollOnError } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
-import { Banknote, CalendarClock, CreditCard as CardIcon, Wallet } from 'lucide-react';
+import { Banknote, CreditCard as CardIcon, Wallet } from 'lucide-react';
 import { PaymentMethodSelector } from '@/components/ui/payment-method-selector';
 import { useTranslations } from 'next-intl';
 
@@ -34,13 +36,36 @@ export function CreateExpenseForm({
   onSuccess?: () => void;
 }) {
   const t = useTranslations('Expenses');
+  const router = useRouter();
   const initialState: ExpenseState = { message: null, errors: {} };
   const [state, formAction] = useActionState<ExpenseState, FormData>(createExpense, initialState);
   const [mode, setMode] = useState<'single' | 'recurring'>('single');
   const [entityType, setEntityType] = useState<'personal' | 'business'>('personal');
   const [paymentMethod, setPaymentMethod] = useState<string>('debit_card');
+  const [amount, setAmount] = useState<string>(initialValues?.amount || '');
+  const [concept, setConcept] = useState<string>(initialValues?.concept || '');
+  const [categoryId, setCategoryId] = useState<string>(
+    initialValues?.category_id || (categories[0]?.id ? String(categories[0].id) : '')
+  );
+  const [vendorId, setVendorId] = useState<string>('');
+  const [status, setStatus] = useState<string>('paid');
+  const [frequency, setFrequency] = useState<string>('monthly');
 
   useFormScrollOnError(state.errors);
+
+  useEffect(() => {
+    if (state.message?.includes('éxito')) {
+      toast.success(state.message);
+      router.refresh();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/dashboard/finances/expenses');
+      }
+    } else if (state.message) {
+      toast.error(state.message);
+    }
+  }, [state, onSuccess, router]);
 
   const getFrequencyLabel = (freq: string) => {
     switch (freq) {
@@ -60,6 +85,10 @@ export function CreateExpenseForm({
         <input type="hidden" name="is_recurring" value={mode === 'recurring' ? 'true' : 'false'} />
         <input type="hidden" name="entity_type" value={entityType} />
         <input type="hidden" name="payment_method" value={paymentMethod} />
+        <input type="hidden" name="category_id" value={categoryId} />
+        <input type="hidden" name="vendor_id" value={vendorId} />
+        <input type="hidden" name="status" value={status} />
+        <input type="hidden" name="frequency" value={frequency} />
 
         {/* 1. TABS: MODO DE GASTO */}
         <Tabs
@@ -129,7 +158,8 @@ export function CreateExpenseForm({
             type="number"
             step="0.01"
             placeholder="0.00"
-            defaultValue={initialValues?.amount}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
             className={cn(
               "pl-14 h-20 text-4xl font-bold bg-muted/20 border-border rounded-2xl shadow-inner text-center",
               "focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground placeholder:text-muted-foreground/50",
@@ -147,7 +177,8 @@ export function CreateExpenseForm({
             id="concept"
             name="concept"
             placeholder={entityType === 'business' ? t('conceptPlaceholderBusiness') : t('conceptPlaceholderPersonal')}
-            defaultValue={initialValues?.concept}
+            value={concept}
+            onChange={(e) => setConcept(e.target.value)}
             className="bg-background border-input text-foreground focus:border-primary h-11 rounded-xl px-4"
           />
           {state.errors?.concept && <p className="text-sm text-destructive ml-1">{state.errors.concept[0]}</p>}
@@ -168,7 +199,7 @@ export function CreateExpenseForm({
 
           <div className="space-y-1.5 w-full">
             <Label htmlFor="category_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('categoryLabel')}</Label>
-            <Select name="category_id" defaultValue={initialValues?.category_id}>
+            <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger className="bg-background border-input text-foreground rounded-xl w-full py-5 hover:bg-muted/50">
                 <SelectValue placeholder={t('categorySelectPlaceholder')} />
               </SelectTrigger>
@@ -178,11 +209,14 @@ export function CreateExpenseForm({
                 ))}
               </SelectContent>
             </Select>
+            {state.errors?.category_id && (
+              <p className="text-xs text-destructive ml-1">{state.errors.category_id[0]}</p>
+            )}
           </div>
 
           <div className="space-y-1.5 w-full">
             <Label htmlFor="vendor_id" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('vendorLabel')}</Label>
-            <Select name="vendor_id">
+            <Select value={vendorId} onValueChange={setVendorId}>
               <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full py-5 hover:bg-muted/50">
                 <SelectValue placeholder={t('vendorOptionalPlaceholder')} />
               </SelectTrigger>
@@ -221,7 +255,7 @@ export function CreateExpenseForm({
               {mode === 'single' ? (
                 <div className="space-y-1.5">
                   <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('tableStatus')}</Label>
-                  <Select name="status" defaultValue="paid">
+                  <Select value={status} onValueChange={setStatus}>
                     <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -234,7 +268,7 @@ export function CreateExpenseForm({
               ) : (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('frequencyLabel')}</Label>
-                  <Select name="frequency" defaultValue="monthly">
+                  <Select value={frequency} onValueChange={setFrequency}>
                     <SelectTrigger className="bg-background border-input text-foreground h-11 rounded-xl w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -251,7 +285,7 @@ export function CreateExpenseForm({
           </div>
         </div>
 
-        {state.message && (
+        {state.message && !state.message.includes('éxito') && (
           <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm text-center">
             {state.message}
           </div>

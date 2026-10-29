@@ -22,6 +22,24 @@ import { requireUser } from './auth-guard';
 
 // --- UTILS ---
 
+function revalidateDashboardPaths(subPaths: string[]) {
+  revalidatePath('/[locale]/dashboard', 'layout');
+  revalidatePath('/dashboard');
+  for (const p of subPaths) {
+    revalidatePath(p);
+    revalidatePath(`/[locale]${p}`, 'page');
+    revalidatePath(`/es${p}`);
+    revalidatePath(`/en${p}`);
+  }
+}
+
+const formatLocalDateISO = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const parseDateAsLocal = (dateString: string | null | undefined): Date | null => {
   if (!dateString) return null;
   // Replace '-' with '/' to better support local time parsing in some environments, though ISO string standard is clearer.
@@ -233,11 +251,11 @@ const CreateClientSchema = ClientSchema.omit({ id: true });
 export async function createClient(prevState: ClientState, formData: FormData): Promise<ClientState> {
   const user = await requireUser();
   const validatedFields = CreateClientSchema.safeParse({
-    name: formData.get('name'),
-    email: formData.get('email'),
-    brand: formData.get('brand'),
-    phone: formData.get('phone'),
-    image_url: formData.get('image_url'),
+    name: formData.get('name')?.toString().trim() ?? '',
+    email: formData.get('email')?.toString().trim() || '',
+    brand: formData.get('brand')?.toString().trim() || undefined,
+    phone: formData.get('phone')?.toString().trim() || undefined,
+    image_url: formData.get('image_url')?.toString() || undefined,
   });
 
   if (!validatedFields.success) {
@@ -255,14 +273,13 @@ export async function createClient(prevState: ClientState, formData: FormData): 
       VALUES (${name}, ${email || null}, ${brand || null}, ${phone || null}, ${image_url || null}, ${user.id})
     `;
   } catch (error) {
-    console.error('Database Error:', error);
+    console.error('Database Error in createClient:', error);
     return {
       message: 'Error de Base de Datos: No se pudo crear el cliente.',
     };
   }
 
-  revalidatePath('/dashboard/finances/clients');
-  revalidatePath('/dashboard/finances/invoices/create');
+  revalidateDashboardPaths(['/dashboard/finances/clients', '/dashboard/finances/invoices/create']);
   return { message: "Cliente creado con éxito.", errors: {} };
 }
 
@@ -278,7 +295,7 @@ export async function deleteClient(formData: FormData) {
       return;
     }
     await sql`DELETE FROM clients WHERE id = ${id} AND user_id = ${user.id}`;
-    revalidatePath('/dashboard/finances/clients');
+    revalidateDashboardPaths(['/dashboard/finances/clients']);
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Error de Base de Datos: No se pudo eliminar el cliente.');
@@ -288,10 +305,10 @@ export async function deleteClient(formData: FormData) {
 export async function updateClient(id: string, prevState: ClientState, formData: FormData): Promise<ClientState> {
   const user = await requireUser();
   const validatedFields = ClientSchema.omit({ id: true }).safeParse({
-    brand: formData.get('brand'),
-    name: formData.get('name'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
+    brand: formData.get('brand')?.toString().trim() || undefined,
+    name: formData.get('name')?.toString().trim() ?? '',
+    email: formData.get('email')?.toString().trim() || '',
+    phone: formData.get('phone')?.toString().trim() || undefined,
   });
 
   if (!validatedFields.success) {
@@ -305,7 +322,7 @@ export async function updateClient(id: string, prevState: ClientState, formData:
   try {
     await sql`
       UPDATE clients
-      SET brand = ${brand}, name = ${name}, email = ${email}, phone = ${phone}
+      SET brand = ${brand || null}, name = ${name}, email = ${email || null}, phone = ${phone || null}
       WHERE id = ${id} AND user_id = ${user.id}
     `;
   } catch (error) {
@@ -313,7 +330,7 @@ export async function updateClient(id: string, prevState: ClientState, formData:
     return { message: 'Error de Base de Datos: No se pudo actualizar el cliente.' };
   }
 
-  revalidatePath('/dashboard/finances/clients');
+  revalidateDashboardPaths(['/dashboard/finances/clients', `/dashboard/finances/clients/${id}`]);
   redirect('/dashboard/finances/clients');
 }
 
@@ -328,7 +345,7 @@ export async function createCategory(name: string): Promise<Category> {
     const newCategory = await sql`
       INSERT INTO expense_categories (name) VALUES (${name}) RETURNING id, name;
     `;
-    revalidatePath('/dashboard/finances/expenses');
+    revalidateDashboardPaths(['/dashboard/finances/expenses']);
     return newCategory.rows[0] as Category;
   } catch (error) {
     console.error('Database Error:', error);
@@ -345,7 +362,7 @@ export async function createVendor(name: string): Promise<Vendor> {
     const newVendor = await sql`
       INSERT INTO vendors (name) VALUES (${name}) RETURNING id, name;
     `;
-    revalidatePath('/dashboard/finances/expenses');
+    revalidateDashboardPaths(['/dashboard/finances/expenses']);
     return newVendor.rows[0] as Vendor;
   } catch (error) {
     console.error('Database Error:', error);
@@ -358,18 +375,20 @@ export async function createVendor(name: string): Promise<Vendor> {
 const CreateCardSchema = CardSchema.omit({ id: true });
 export async function createCard(prevState: CardState, formData: FormData): Promise<CardState> {
   const user = await requireUser();
+  const lastFourRaw = formData.get('last_four_digits')?.toString().replace(/\D/g, '') || '';
+
   const validatedFields = CreateCardSchema.safeParse({
-    name: formData.get('name'),
-    last_four_digits: formData.get('last_four_digits'),
+    name: formData.get('name')?.toString().trim() ?? '',
+    last_four_digits: lastFourRaw.length >= 4 ? lastFourRaw.slice(-4) : null,
     closing_day: formData.get('closing_day'),
     due_day: formData.get('due_day'),
-    color: formData.get('color'),
+    color: formData.get('color')?.toString() || 'slate',
   });
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Faltan campos o son inválidos.',
+      message: 'Faltan campos o son inválidos (verifica días de cierre y vencimiento entre 1 y 31).',
     };
   }
   const { name, last_four_digits, closing_day, due_day, color } = validatedFields.data;
@@ -377,14 +396,17 @@ export async function createCard(prevState: CardState, formData: FormData): Prom
   try {
     await sql`
       INSERT INTO cards (name, last_four_digits, closing_day, due_day, color, user_id)
-      VALUES (${name}, ${last_four_digits}, ${closing_day}, ${due_day}, ${color}, ${user.id})
+      VALUES (${name}, ${last_four_digits ?? null}, ${closing_day}, ${due_day}, ${color}, ${user.id})
     `;
   } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Error de Base de Datos: No se pudo crear la tarjeta.');
+    console.error('Database Error in createCard:', error);
+    return {
+      message: 'Error de Base de Datos: No se pudo crear la tarjeta.',
+      errors: {},
+    };
   }
-  revalidatePath('/dashboard/finances/cards');
-  return { message: 'Tarjeta creada con éxito.' };
+  revalidateDashboardPaths(['/dashboard/finances/cards']);
+  return { message: 'Tarjeta creada con éxito.', errors: {} };
 }
 
 // --- EXPENSES (REFACTORED) ---
@@ -403,21 +425,23 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
     return createExpenseTemplate(prevState, formData);
   }
 
-  const parsedDate = parseDateAsLocal(formData.get('expense_date') as string);
+  const parsedDate = parseDateAsLocal(formData.get('expense_date')?.toString());
   const validDate = parsedDate ?? new Date();
   const period = `${validDate.getFullYear()}-${String(validDate.getMonth() + 1).padStart(2, '0')}`;
+  const explicitAccountId = formData.get('account_id')?.toString() || null;
+
   const rawData = {
-    concept: formData.get('concept'),
-    category_id: formData.get('category_id'),
-    vendor_id: formData.get('vendor_id') || null,
+    concept: formData.get('concept')?.toString().trim() ?? '',
+    category_id: formData.get('category_id')?.toString() || '',
+    vendor_id: formData.get('vendor_id')?.toString() || null,
     amount: amountVal,
-    currency: formData.get('currency') || 'ARS',
-    status: formData.get('status') || 'pending',
+    currency: formData.get('currency')?.toString() || 'ARS',
+    status: formData.get('status')?.toString() || 'paid',
     date: validDate,
-    payment_method: formData.get('payment_method'),
-    card_id: formData.get('card_id') || null,
-    description: formData.get('description') || null,
-    entity_type: formData.get('entity_type') || 'personal',
+    payment_method: formData.get('payment_method')?.toString() || 'debit_card',
+    card_id: formData.get('card_id')?.toString() || null,
+    description: formData.get('description')?.toString() || null,
+    entity_type: formData.get('entity_type')?.toString() || 'personal',
   };
 
   const validated = CreateExpenseSchema.safeParse(rawData);
@@ -425,20 +449,56 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
   if (!validated.success) {
     return {
       errors: validated.error.flatten().fieldErrors,
-      message: 'Error en campos del gasto.',
+      message: 'Por favor revisa los campos obligatorios del gasto (monto, concepto y categoría).',
     };
   }
 
   const data = validated.data;
   const amountInCents = Math.round(data.amount * 100);
+  const dateStr = formatLocalDateISO(data.date);
   const db = await sql.connect();
 
   try {
-    // Inserción directa sin partición de cuotas en tablas secundarias
+    await db.query('BEGIN');
+
+    let targetAccountId: string | null = explicitAccountId;
+
+    // Si es un gasto pagado con método directo (efectivo, débito, transferencia), resolver cuenta y descontar saldo
+    if (data.status === 'paid' && data.payment_method !== 'credit_card') {
+      if (!targetAccountId) {
+        const prefersCash = data.payment_method === 'cash';
+        const accRes = await db.query(
+          `SELECT id FROM bank_accounts
+           WHERE user_id = $1
+             AND is_active = TRUE
+             AND currency = $2
+           ORDER BY
+             CASE
+               WHEN $3::boolean = TRUE AND account_type = 'cash' THEN 0
+               WHEN $3::boolean = FALSE AND account_type IN ('bank', 'wallet', 'usd_account') THEN 0
+               ELSE 1
+             END ASC,
+             balance DESC
+           LIMIT 1`,
+          [user.id, data.currency || 'ARS', prefersCash]
+        );
+        targetAccountId = accRes.rows[0]?.id || null;
+      }
+
+      if (targetAccountId) {
+        await db.query(
+          `UPDATE bank_accounts
+           SET balance = balance - $1, updated_at = NOW()
+           WHERE id = $2 AND user_id = $3 AND is_active = TRUE`,
+          [amountInCents, targetAccountId, user.id]
+        );
+      }
+    }
+
     await db.query(
       `INSERT INTO expenses 
-       (concept, amount, currency, category_id, vendor_id, payment_method, card_id, date, status, description, entity_type, period, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+       (concept, amount, currency, category_id, vendor_id, payment_method, card_id, account_id, date, status, description, entity_type, period, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         data.concept,
         amountInCents,
@@ -447,7 +507,8 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
         data.vendor_id,
         data.payment_method,
         data.card_id,
-        data.date.toISOString(),
+        targetAccountId,
+        dateStr,
         data.status,
         data.description,
         data.entity_type,
@@ -455,34 +516,37 @@ export async function createExpense(prevState: ExpenseState, formData: FormData)
         user.id,
       ]
     );
+
+    await db.query('COMMIT');
   } catch (err) {
-    console.error('DB Error:', err);
+    await db.query('ROLLBACK');
+    console.error('DB Error in createExpense:', err);
     return { message: 'Error al guardar el gasto.' };
   } finally {
     db.release();
   }
 
-  revalidatePath('/dashboard/finances/expenses');
-  redirect('/dashboard/finances/expenses');
+  revalidateDashboardPaths(['/dashboard/finances/expenses', '/dashboard/finances/banks']);
+  return { message: 'Gasto registrado con éxito.', errors: {} };
 }
 
 async function createExpenseTemplate(prevState: ExpenseState, formData: FormData): Promise<ExpenseState> {
   const user = await requireUser();
   const rawAmount = formData.get('amount');
-  const parsedDate = parseDateAsLocal(formData.get('expense_date') as string);
+  const parsedDate = parseDateAsLocal(formData.get('expense_date')?.toString());
   const validDate = parsedDate ?? new Date();
   const period = `${validDate.getFullYear()}-${String(validDate.getMonth() + 1).padStart(2, '0')}`;
   const rawData = {
-    concept: formData.get('concept'),
+    concept: formData.get('concept')?.toString().trim() ?? '',
     amount: rawAmount ? Number(rawAmount) : 0,
-    currency: formData.get('currency') || 'ARS',
-    category_id: formData.get('category_id'),
-    vendor_id: formData.get('vendor_id') || null,
-    frequency: formData.get('frequency') || 'monthly',
+    currency: formData.get('currency')?.toString() || 'ARS',
+    category_id: formData.get('category_id')?.toString() || '',
+    vendor_id: formData.get('vendor_id')?.toString() || null,
+    frequency: formData.get('frequency')?.toString() || 'monthly',
     start_date: validDate,
-    payment_method: formData.get('payment_method'),
-    card_id: formData.get('card_id') || null,
-    entity_type: formData.get('entity_type') || 'personal',
+    payment_method: formData.get('payment_method')?.toString() || 'debit_card',
+    card_id: formData.get('card_id')?.toString() || null,
+    entity_type: formData.get('entity_type')?.toString() || 'personal',
     active: true,
   };
 
@@ -497,6 +561,7 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
 
   const data = validated.data;
   const amountInCents = Math.round(data.amount * 100);
+  const startDateStr = formatLocalDateISO(data.start_date);
   const db = await sql.connect();
 
   try {
@@ -515,8 +580,8 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
         data.category_id,
         data.vendor_id,
         data.frequency,
-        data.start_date.toISOString(),
-        data.start_date.toISOString(),
+        startDateStr,
+        startDateStr,
         data.payment_method,
         data.card_id,
         data.entity_type,
@@ -539,7 +604,7 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
         data.vendor_id,
         data.payment_method,
         data.card_id,
-        data.start_date.toISOString(),
+        startDateStr,
         templateId,
         data.entity_type,
         period,
@@ -556,8 +621,8 @@ async function createExpenseTemplate(prevState: ExpenseState, formData: FormData
     db.release();
   }
 
-  revalidatePath('/dashboard/finances/expenses');
-  redirect('/dashboard/finances/expenses');
+  revalidateDashboardPaths(['/dashboard/finances/expenses']);
+  return { message: 'Plantilla recurrente creada con éxito.', errors: {} };
 }
 
 export async function deleteExpense(formData: FormData) {
@@ -568,7 +633,7 @@ export async function deleteExpense(formData: FormData) {
 
   try {
     await sql`DELETE FROM expenses WHERE id = ${id} AND user_id = ${user.id}`;
-    revalidatePath('/dashboard/finances/expenses');
+    revalidateDashboardPaths(['/dashboard/finances/expenses']);
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Error de Base de Datos: No se pudo eliminar el gasto.');
@@ -579,17 +644,26 @@ const UpdateExpenseSchema = ExpenseSchema.omit({ id: true }).partial();
 
 export async function updateExpense(id: string, prevState: ExpenseState, formData: FormData): Promise<ExpenseState> {
   const user = await requireUser();
+  const rawStatus = formData.get('status')?.toString();
+  const normalizedStatus =
+    rawStatus === 'facturado' ? 'paid' :
+    rawStatus === 'pendiente' ? 'pending' :
+    rawStatus === 'vencido' ? 'overdue' :
+    rawStatus || undefined;
+
+  const dateInput = (formData.get('expense_date') || formData.get('date'))?.toString();
+
   const rawData = {
-    concept: formData.get('concept'),
-    category_id: formData.get('category_id'),
-    vendor_id: formData.get('vendor_id') || null,
+    concept: formData.get('concept')?.toString() || undefined,
+    category_id: formData.get('category_id')?.toString() || undefined,
+    vendor_id: formData.get('vendor_id')?.toString() || null,
     amount: formData.get('amount') ? Number(formData.get('amount')) : undefined,
-    currency: formData.get('currency'),
-    status: formData.get('status'),
-    date: parseDateAsLocal(formData.get('expense_date') as string),
-    payment_method: formData.get('payment_method'),
-    card_id: formData.get('card_id') || null,
-    description: formData.get('description'),
+    currency: formData.get('currency')?.toString() || undefined,
+    status: normalizedStatus,
+    date: parseDateAsLocal(dateInput) ?? undefined,
+    payment_method: formData.get('payment_method')?.toString() || undefined,
+    card_id: formData.get('card_id')?.toString() || null,
+    description: formData.get('description')?.toString() || null,
   };
 
   const validatedFields = UpdateExpenseSchema.safeParse(rawData);
@@ -605,7 +679,7 @@ export async function updateExpense(id: string, prevState: ExpenseState, formDat
   const amountInCents = data.amount ? Math.round(data.amount * 100) : undefined;
 
   try {
-    const dateStr = data.date ? data.date.toISOString() : undefined;
+    const dateStr = data.date ? formatLocalDateISO(data.date) : undefined;
 
     // We will build arrays for dynamic update
     const cols = [];
@@ -641,8 +715,7 @@ export async function updateExpense(id: string, prevState: ExpenseState, formDat
   }
 
   const basePath = '/dashboard/finances/expenses';
-  revalidatePath(basePath);
-  revalidatePath(`${basePath}/${id}/edit`);
+  revalidateDashboardPaths([basePath, `${basePath}/${id}/edit`]);
   redirect(basePath);
 }
 

@@ -28,7 +28,7 @@ export function Header({
         <header className="hidden xl:flex h-16 w-full items-center justify-between border-b border-border bg-background py-6 px-6">
             {/* Left side (Date) */}
             <div className="flex items-center gap-3">
-                <h2 className="text-sm font-medium text-foreground capitalize tracking-tight">
+                <h2 suppressHydrationWarning className="text-sm font-medium text-foreground capitalize tracking-tight">
                     {currentDate}
                 </h2>
             </div>

@@ -8,23 +8,21 @@ const { auth } = NextAuth(authConfig);
 
 export default auth(async function middleware(req) {
     const { nextUrl } = req;
-    const isLoggedIn = !!req.auth;
-    const isDashboard = nextUrl.pathname.includes('/dashboard');
+    const isLoggedIn = !!req.auth?.user;
 
-    if (isDashboard && !isLoggedIn) {
-        // Redirect to login, preserving locale if possible, otherwise default
-        const localeMatch = nextUrl.pathname.match(/^\/([a-z]{2})\//);
-        const locale = localeMatch ? localeMatch[1] : 'es'; // Default to 'es' if not found
+    const localeMatch = nextUrl.pathname.match(/^\/([a-z]{2})(\/|$)/);
+    const locale = localeMatch ? localeMatch[1] : routing.defaultLocale;
+
+    const isDashboard = nextUrl.pathname.includes('/dashboard');
+    const isOnboarding = nextUrl.pathname.includes('/onboarding');
+
+    if ((isDashboard || isOnboarding) && !isLoggedIn) {
         return Response.redirect(new URL(`/${locale}/login`, nextUrl));
     }
 
-    // 1. Run i18n middleware first to handle redirects (e.g. / -> /es) and locale resolution
-    const res = handleI18nRouting(req);
-
-    return res;
+    return handleI18nRouting(req);
 });
 
 export const config = {
-    // Match only internationalized pathnames
     matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
 };

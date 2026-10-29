@@ -65,33 +65,24 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
     }, []);
 
     const validity = useMemo(() => {
-        const numberValid = rawNumber.length >= (networkDetails.network === "amex" ? 15 : 13);
-        const holderValid = holder.trim().length >= 2;
-        const monthValid = !!month;
-        const yearValid = !!year;
-        const cvvValid = rawNumber.length > 0 && cvv.length >= networkDetails.cvvLength;
+        const numberValid =
+            rawNumber.length === 4 ||
+            rawNumber.length >= (networkDetails.network === "amex" ? 15 : 13);
 
         return {
             number: numberValid,
-            holder: holderValid,
-            month: monthValid,
-            year: yearValid,
-            cvv: cvvValid,
-            allValid: numberValid && holderValid && monthValid && yearValid && cvvValid,
+            allValid: numberValid && Boolean(cardName.trim()) && Boolean(closingDay) && Boolean(dueDay),
         };
-    }, [rawNumber, holder, month, year, cvv, networkDetails]);
+    }, [rawNumber, cardName, closingDay, dueDay, networkDetails.network]);
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
         setServerError(null);
 
-        if (!validity.allValid || !closingDay || !dueDay || !cardName) {
+        if (!validity.allValid) {
             let errorMsg = t("formErrorRequired");
-            if (!cardName) errorMsg = t("formErrorName");
-            else if (!validity.number) errorMsg = t("formErrorNumber", { count: networkDetails.maxLength });
-            else if (!validity.holder) errorMsg = t("formErrorHolder");
-            else if (!validity.month || !validity.year) errorMsg = t("formErrorExpiry");
-            else if (!validity.cvv) errorMsg = t("formErrorCvv", { count: networkDetails.cvvLength });
+            if (!cardName.trim()) errorMsg = t("formErrorName");
+            else if (!validity.number) errorMsg = "Ingresa al menos los últimos 4 dígitos de la tarjeta.";
             else if (!closingDay) errorMsg = t("formErrorClosingDay");
             else if (!dueDay) errorMsg = t("formErrorDueDay");
 
@@ -101,7 +92,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
 
         setIsSubmitting(true);
         const formData = new FormData();
-        formData.append("name", cardName);
+        formData.append("name", cardName.trim());
         formData.append("last_four_digits", rawNumber.slice(-4));
         formData.append("closing_day", closingDay);
         formData.append("due_day", dueDay);
@@ -122,6 +113,7 @@ export function CreditCardForm({ className, onSuccess }: ExtendedProps) {
             }
 
             if (onSuccess) {
+                router.refresh();
                 onSuccess();
             } else {
                 router.push("/dashboard/finances/cards");

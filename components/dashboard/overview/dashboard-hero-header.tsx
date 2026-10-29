@@ -98,6 +98,15 @@ export function DashboardHeroHeader({
 
 
 
+            <CreateExpenseDialog
+                open={expenseOpen}
+                onOpenChange={setExpenseOpen}
+                hideTrigger
+                vendors={vendors}
+                categories={categories}
+                cards={cards}
+            />
+
             <EventDialog
                 open={eventOpen}
                 onOpenChange={setEventOpen}

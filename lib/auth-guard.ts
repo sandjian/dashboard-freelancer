@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  onboardingCompleted?: boolean;
 }
 
 /**

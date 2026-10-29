@@ -112,11 +112,11 @@ export function EditExpenseForm({
             {/* --- ROW 3: DATE / CATEGORY / VENDOR --- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="date" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+                <Label htmlFor="expense_date" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
                   {t('dateLabel')}
                 </Label>
                 <DatePicker
-                  name="date"
+                  name="expense_date"
                   defaultValue={expense.date ? new Date(expense.date) : new Date()}
                   className="bg-background border-input text-foreground rounded-xl hover:bg-muted/50"
                 />
@@ -210,14 +210,14 @@ export function EditExpenseForm({
                     mode === 'single' ? (
                       <div className="space-y-1">
                         <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">{t('tableStatus')}</Label>
-                        <Select name="status" defaultValue={expense.status || "pendiente"}>
+                        <Select name="status" defaultValue={expense.status || "pending"}>
                           <SelectTrigger className="bg-background border-input text-foreground h-10 rounded-lg w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-popover border-border text-foreground">
-                            <SelectItem value="facturado" className="text-emerald-500 focus:bg-muted">{t('statusPaid')}</SelectItem>
-                            <SelectItem value="pendiente" className="text-amber-500 focus:bg-muted">{t('statusPending')}</SelectItem>
-                            <SelectItem value="vencido" className="text-destructive focus:bg-muted">{t('statusOverdue')}</SelectItem>
+                            <SelectItem value="paid" className="text-emerald-500 focus:bg-muted">{t('statusPaid')}</SelectItem>
+                            <SelectItem value="pending" className="text-amber-500 focus:bg-muted">{t('statusPending')}</SelectItem>
+                            <SelectItem value="overdue" className="text-destructive focus:bg-muted">{t('statusOverdue')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

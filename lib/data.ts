@@ -978,6 +978,8 @@ export async function fetchFilteredExpenses(
           expenses.vendor_id,
           expenses.template_id,
           expenses.description,
+          COALESCE(expenses.entity_type, 'personal')::text AS entity_type,
+          COALESCE(expenses.period, '')::text AS period,
           v.name AS vendor_name,
           ec.name AS category_name,
           (SELECT COUNT(*) FROM expense_installments WHERE expense_id = expenses.id) as total_installments
@@ -1026,6 +1028,8 @@ export async function fetchFilteredExpenses(
            e.vendor_id AS vendor_id,
            e.template_id AS template_id,
            'Cuota de tarjeta' AS description,
+           COALESCE(e.entity_type, 'personal')::text AS entity_type,
+           COALESCE(e.period, '')::text AS period,
            v.name AS vendor_name,
            ec.name AS category_name,
            ei.total_installments
@@ -1054,6 +1058,8 @@ export async function fetchFilteredExpenses(
            NULL::uuid AS vendor_id,
            NULL::uuid AS template_id,
            'Resumen mensual de tarjeta' AS description,
+           'personal'::text AS entity_type,
+           ''::text AS period,
            c.name AS vendor_name,
            'Tarjetas' AS category_name,
            COUNT(*) AS total_installments
@@ -1165,7 +1171,7 @@ export async function fetchDashboardData(userId?: string) {
       WHERE cs.status IN ('pending', 'partially_paid') AND c.user_id = $1`,
       [uid]
     );
-    const pendingCardDebt = Number(pendingStatementsResult.rows[0].total || 0) / 100;
+    const pendingCardDebt = Number(pendingStatementsResult.rows[0].total || 0);
 
     // --- 3. Flujo Operativo del Mes en Curso (KPIs del Período) ---
     const incomeResult = await db.query(
@@ -1239,7 +1245,7 @@ export async function fetchDashboardData(userId?: string) {
         cardName: row.card_name,
         cardId: row.card_id,
         date: new Date(row.due_date),
-        amount: Number(row.remaining_amount) / 100,
+        amount: Number(row.remaining_amount),
         label: `Resumen Tarjeta ${row.card_name}`,
       };
     } else {
@@ -1838,7 +1844,7 @@ export async function fetchUpcomingDues(userId?: string): Promise<UpcomingDueIte
         type: 'card',
         title: `Resumen ${row.card_name}`,
         subtitle: 'Vencimiento de tarjeta',
-        amount: Number(row.remaining_amount) / 100,
+        amount: Number(row.remaining_amount),
         currency: 'ARS',
         dueDate: new Date(row.due_date),
         isOverdue: Boolean(row.is_overdue),

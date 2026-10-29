@@ -54,7 +54,7 @@ export function OperationalFocusPanel({
                         </div>
                         <div>
                             <h3 className="text-sm font-semibold text-foreground tracking-tight">{t("operationalFocus")}</h3>
-                            <p className="text-[11px] text-muted-foreground capitalize">
+                            <p suppressHydrationWarning className="text-[11px] text-muted-foreground capitalize">
                                 {format(
                                     new Date(),
                                     locale === "es" ? "EEEE d 'de' MMMM" : "EEEE, MMMM d",
