@@ -1,5 +1,5 @@
 import { requireUser } from '@/lib/auth-guard';
-import { fetchClients, fetchNextInvoiceNumber, fetchLastIssuedInvoices, fetchOverdueInvoices } from '@/lib/data';
+import { fetchClients, fetchCompanies, fetchNextInvoiceNumber, fetchLastIssuedInvoices, fetchOverdueInvoices } from '@/lib/data';
 import { CreateInvoiceForm } from '@/components/dashboard/finances/invoices/create-form';
 import { InvoiceSidePanel } from '@/components/dashboard/finances/invoices/invoice-side-panel';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
@@ -9,11 +9,12 @@ export default async function CreateInvoicePage({
 }: {
   searchParams?: Promise<{ client_id?: string }>;
 }) {
-  const user = await requireUser();
+  await requireUser();
   const resolvedSearchParams = await searchParams;
   const preselectedClientId = resolvedSearchParams?.client_id;
-  const [clients, nextInvoiceNumber, lastIssued, overdue] = await Promise.all([
+  const [clients, companies, nextInvoiceNumber, lastIssued, overdue] = await Promise.all([
     fetchClients(),
+    fetchCompanies(),
     fetchNextInvoiceNumber(),
     fetchLastIssuedInvoices(5),
     fetchOverdueInvoices(5)
@@ -56,6 +57,7 @@ export default async function CreateInvoicePage({
           <div className="md:col-span-3 lg:col-span-3 xl:col-span-3">
             <CreateInvoiceForm
               clients={clients}
+              companies={companies}
               nextInvoiceNumber={nextInvoiceNumber}
               initialClientId={preselectedClientId}
             />

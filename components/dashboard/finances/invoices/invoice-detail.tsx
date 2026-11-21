@@ -112,9 +112,16 @@ export default function InvoiceDetails({ invoice }: { invoice: FullInvoice }) {
               <div className="p-4 border-b md:border-b-0 md:border-r border-dashed border-border/60 space-y-2">
                 <h3 className='text-lg font-semibold font-mono tracking-tight text-foreground'>De:</h3>
                 <div className='flex flex-col gap-y-1.5'>
-                  <p className="font-semibold text-sm text-foreground">Tu Empresa</p>
-                  <p className="text-xs text-muted-foreground">Calle Falsa 123</p>
-                  <p className="text-xs text-muted-foreground">contacto@tuempresa.com</p>
+                  <p className="font-semibold text-sm text-foreground">{invoice.company?.name || 'Tu Empresa'}</p>
+                  {invoice.company?.address && (
+                    <p className="text-xs text-muted-foreground">{invoice.company.address}</p>
+                  )}
+                  {invoice.company?.email && (
+                    <p className="text-xs text-muted-foreground">{invoice.company.email}</p>
+                  )}
+                  {invoice.company?.tax_id && (
+                    <p className="text-xs font-mono text-muted-foreground">CUIT/ID: {invoice.company.tax_id}</p>
+                  )}
                 </div>
               </div>
               <div className="p-4 space-y-2">
@@ -194,7 +201,7 @@ export default function InvoiceDetails({ invoice }: { invoice: FullInvoice }) {
 
             <div className="pt-4 mt-4 border-t border-border/60 text-xs text-muted-foreground py-6">
               <p className="font-medium text-foreground mb-1">Atención al Consumidor:</p>
-              <p>Ante cualquier duda o reclamo, por favor contactarse a contacto@tuempresa.com</p>
+              <p>Ante cualquier duda o reclamo, por favor contactarse a {invoice.company?.email || 'contacto@tuempresa.com'}</p>
               <p>Horario de atención: Lunes a Viernes de 9:00 a 18:00 hs</p>
             </div>
           </CardContent>

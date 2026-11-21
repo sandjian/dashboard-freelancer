@@ -9,6 +9,8 @@ import {
   Category,
   ClientSchema,
   ClientState,
+  Company,
+  CompanySchema,
   ExpenseSchema,
   ExpenseTemplateSchema,
   ExpenseState,
@@ -48,6 +50,61 @@ const parseDateAsLocal = (dateString: string | null | undefined): Date | null =>
   return isNaN(date.getTime()) ? null : date;
 };
 
+// --- COMPANIES (Tu Empresa) ---
+
+const CreateCompanySchema = CompanySchema.omit({ id: true, user_id: true, is_default: true });
+
+export async function createCompanyInline(input: {
+  name: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  tax_id?: string;
+}): Promise<{ success: boolean; company?: Company; message?: string }> {
+  const user = await requireUser();
+
+  const parsed = CreateCompanySchema.safeParse({
+    name: input.name?.trim() ?? '',
+    address: input.address?.trim() || null,
+    email: input.email?.trim() || '',
+    phone: input.phone?.trim() || null,
+    tax_id: input.tax_id?.trim() || null,
+  });
+
+  if (!parsed.success) {
+    const firstError = Object.values(parsed.error.flatten().fieldErrors).flat()[0];
+    return {
+      success: false,
+      message: firstError || 'Por favor verifica el nombre y email de tu empresa.',
+    };
+  }
+
+  const { name, address, email, phone, tax_id } = parsed.data;
+
+  try {
+    const countRes = await sql`SELECT COUNT(*) AS count FROM companies WHERE user_id = ${user.id}`;
+    const isFirst = Number(countRes.rows[0]?.count || 0) === 0;
+
+    const inserted = await sql<Company>`
+      INSERT INTO companies (user_id, name, address, email, phone, tax_id, is_default)
+      VALUES (${user.id}, ${name}, ${address || null}, ${email || null}, ${phone || null}, ${tax_id || null}, ${isFirst})
+      RETURNING id, user_id, name, address, email, phone, tax_id, image_url, is_default
+    `;
+
+    revalidateDashboardPaths(['/dashboard/finances/invoices/create', '/dashboard/finances/invoices']);
+    return {
+      success: true,
+      company: inserted.rows[0],
+    };
+  } catch (error) {
+    console.error('Database Error in createCompanyInline:', error);
+    return {
+      success: false,
+      message: 'No se pudo guardar la empresa en la base de datos.',
+    };
+  }
+}
+
 // --- INVOICES ---
 
 const CreateInvoiceSchema = InvoiceSchema.omit({ id: true, invoice_number: true, amount: true });
@@ -57,8 +114,10 @@ export async function createInvoice(prevState: InvoiceState, formData: FormData)
 
   const issueDateValue = formData.get('issue_date') as string;
   const dueDateValue = formData.get('due_date') as string;
+  const companyIdRaw = formData.get('company_id')?.toString().trim() || null;
 
   const validatedFields = CreateInvoiceSchema.safeParse({
+    company_id: companyIdRaw,
     client_id: formData.get('client_id'),
     status: formData.get('status'),
     discount: formData.get('discount'),
@@ -73,7 +132,7 @@ export async function createInvoice(prevState: InvoiceState, formData: FormData)
       message: 'Faltan campos principales.',
     };
   }
-  const { client_id, status, discount, issue_date, due_date, currency } = validatedFields.data;
+  const { company_id, client_id, status, discount, issue_date, due_date, currency } = validatedFields.data;
 
   // Process Line Items
   const lineItems = [];
@@ -103,10 +162,10 @@ export async function createInvoice(prevState: InvoiceState, formData: FormData)
   try {
     await db.query('BEGIN');
     const insertedInvoice = await db.query(
-      `INSERT INTO invoices (client_id, invoice_number, amount, currency, discount, status, issue_date, due_date, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO invoices (company_id, client_id, invoice_number, amount, currency, discount, status, issue_date, due_date, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
-      [client_id, nextInvoiceNumber, finalAmountInCents, currency, discount, status, issue_date, due_date, user.id]
+      [company_id || null, client_id, nextInvoiceNumber, finalAmountInCents, currency, discount, status, issue_date, due_date, user.id]
     );
     const invoiceId = insertedInvoice.rows[0].id;
 
@@ -126,7 +185,7 @@ export async function createInvoice(prevState: InvoiceState, formData: FormData)
     db.release();
   }
 
-  revalidatePath('/dashboard/finances/invoices');
+  revalidateDashboardPaths(['/dashboard/finances/invoices']);
   redirect('/dashboard/finances/invoices');
 }
 
@@ -142,7 +201,7 @@ export async function deleteInvoice(formData: FormData) {
     await db.query(`DELETE FROM invoices WHERE id = $1 AND user_id = $2`, [id, user.id]);
     await db.query('COMMIT');
 
-    revalidatePath('/dashboard/finances/invoices');
+    revalidateDashboardPaths(['/dashboard/finances/invoices']);
   } catch (error) {
     await db.query('ROLLBACK');
     console.error('Database Error:', error);
@@ -156,7 +215,10 @@ const UpdateInvoiceSchema = InvoiceSchema.omit({ id: true, invoice_number: true,
 
 export async function updateInvoice(id: string, prevState: InvoiceState, formData: FormData): Promise<InvoiceState> {
   const user = await requireUser();
+  const companyIdRaw = formData.get('company_id')?.toString().trim() || null;
+
   const validatedFields = UpdateInvoiceSchema.safeParse({
+    company_id: companyIdRaw,
     client_id: formData.get('client_id'),
     status: formData.get('status'),
     discount: formData.get('discount'),
@@ -172,7 +234,7 @@ export async function updateInvoice(id: string, prevState: InvoiceState, formDat
     };
   }
 
-  const { client_id, status, discount, issue_date, due_date, currency } = validatedFields.data;
+  const { company_id, client_id, status, discount, issue_date, due_date, currency } = validatedFields.data;
 
   const lineItems = [];
   let totalAmountInCents = 0;
@@ -200,9 +262,9 @@ export async function updateInvoice(id: string, prevState: InvoiceState, formDat
     await db.query('BEGIN');
     await db.query(
       `UPDATE invoices
-       SET client_id = $1, amount = $2, currency = $3, discount = $4, status = $5, issue_date = $6, due_date = $7
-       WHERE id = $8 AND user_id = $9`,
-      [client_id, finalAmountInCents, currency, discount, status, issue_date, due_date, id, user.id]
+       SET company_id = $1, client_id = $2, amount = $3, currency = $4, discount = $5, status = $6, issue_date = $7, due_date = $8
+       WHERE id = $9 AND user_id = $10`,
+      [company_id || null, client_id, finalAmountInCents, currency, discount, status, issue_date, due_date, id, user.id]
     );
     await db.query(`DELETE FROM line_items WHERE invoice_id = $1`, [id]);
     for (const item of lineItems) {
@@ -221,7 +283,7 @@ export async function updateInvoice(id: string, prevState: InvoiceState, formDat
     db.release();
   }
 
-  revalidatePath('/dashboard/finances/invoices');
+  revalidateDashboardPaths(['/dashboard/finances/invoices', `/dashboard/finances/invoices/${id}/details`]);
   redirect('/dashboard/finances/invoices');
 }
 

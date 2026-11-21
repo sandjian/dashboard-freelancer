@@ -2,8 +2,9 @@
 
 import { useActionState, useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { createInvoice, getLastInvoiceForClient } from '@/lib/actions';
-import type { InvoiceState, Client } from '@/lib/definitions';
+import { toast } from 'sonner';
+import { createInvoice, createCompanyInline, getLastInvoiceForClient } from '@/lib/actions';
+import type { InvoiceState, Client, Company } from '@/lib/definitions';
 import { AnimatedSubmitButton } from '@/components/ui/animated-submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from '@/components/ui/separator';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatCurrency } from '@/lib/utils';
-import { PlusIcon, PencilIcon, FileClockIcon, ClockIcon, CheckCircleIcon, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { PlusIcon, PencilIcon, FileClockIcon, ClockIcon, CheckCircleIcon, Trash2, Sparkles, Loader2, Building2 } from 'lucide-react';
 import { useFormScrollOnError } from '@/lib/hooks';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -37,10 +38,12 @@ const statusOptions = [
 
 export function CreateInvoiceForm({
   clients,
+  companies = [],
   nextInvoiceNumber,
   initialClientId,
 }: {
   clients: Client[];
+  companies?: Company[];
   nextInvoiceNumber: number;
   initialClientId?: string;
 }) {
@@ -61,6 +64,21 @@ export function CreateInvoiceForm({
   const [discount, setDiscount] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
+
+  // Estado de Empresas ("De: Tu Empresa")
+  const [companyList, setCompanyList] = useState<Company[]>(companies);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(() => companies[0] || null);
+  const [isCompanyModalOpen, setCompanyModalOpen] = useState(false);
+  const [companyModalMode, setCompanyModalMode] = useState<'list' | 'create'>(() =>
+    companies.length === 0 ? 'create' : 'list'
+  );
+  const [newCompName, setNewCompName] = useState('');
+  const [newCompAddress, setNewCompAddress] = useState('');
+  const [newCompEmail, setNewCompEmail] = useState('');
+  const [newCompTaxId, setNewCompTaxId] = useState('');
+  const [isCreatingCompany, startCreatingCompany] = useTransition();
+
+  // Estado de Clientes ("Para:")
   const [selectedClient, setSelectedClient] = useState<Client | null>(() => {
     if (initialClientId) {
       return clients.find((c) => c.id === initialClientId) || null;
@@ -81,7 +99,6 @@ export function CreateInvoiceForm({
     setTotal(newSubtotal - discountAmount);
   }, [lineItems, discount]);
 
-  // Si cambia la fecha de emisión, el vencimiento avanza automáticamente 10 días desde esa fecha base
   const handleIssueDateChange = (date: Date | undefined) => {
     if (!date) return;
     setIssueDate(date);
@@ -89,7 +106,6 @@ export function CreateInvoiceForm({
     nextDue.setDate(nextDue.getDate() + 10);
     setDueDate(nextDue);
   };
-
 
   const handleItemChange = (index: number, field: string, value: string | number) => {
     const newItems = [...lineItems];
@@ -130,10 +146,48 @@ export function CreateInvoiceForm({
     });
   };
 
+  const handleCreateCompany = () => {
+    if (!newCompName.trim()) {
+      toast.error('Ingresa el nombre de tu empresa.');
+      return;
+    }
+
+    startCreatingCompany(async () => {
+      const res = await createCompanyInline({
+        name: newCompName,
+        address: newCompAddress,
+        email: newCompEmail,
+        tax_id: newCompTaxId,
+      });
+
+      if (!res.success || !res.company) {
+        toast.error(res.message || 'No se pudo crear la empresa.');
+        return;
+      }
+
+      const created = res.company;
+      setCompanyList((prev) => [...prev, created]);
+      setSelectedCompany(created);
+      setNewCompName('');
+      setNewCompAddress('');
+      setNewCompEmail('');
+      setNewCompTaxId('');
+      setCompanyModalMode('list');
+      setCompanyModalOpen(false);
+      toast.success('Empresa creada y seleccionada.');
+    });
+  };
+
+  const openCompanyModal = (mode: 'list' | 'create') => {
+    setCompanyModalMode(mode);
+    setCompanyModalOpen(true);
+  };
+
   const currentYearSuffix = new Date().getFullYear().toString().slice(-2);
 
   return (
     <form action={formAction} className="space-y-6">
+      <input type="hidden" name="company_id" value={selectedCompany?.id || ''} />
       <input type="hidden" name="client_id" value={selectedClient?.id || ''} />
       <input type="hidden" name="currency" value="ARS" />
 
@@ -142,15 +196,201 @@ export function CreateInvoiceForm({
 
           {/* SECCIÓN DE / PARA */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2 sm:px-4">
+            {/* BLOQUE DE: TU EMPRESA */}
             <div className="p-4 border-r border-border border-dashed space-y-2">
-              <h3 className="text-xl font-semibold text-foreground">De:</h3>
-              <div className="flex flex-col gap-y-2">
-                <Input value="Tu Empresa" className="font-semibold text-sm bg-muted/50 border-transparent text-foreground p-2" readOnly />
-                <Input value="Calle Falsa 123" className="text-xs text-muted-foreground bg-transparent border-transparent px-0 h-auto" readOnly />
-                <Input value="contacto@tuempresa.com" className="text-xs text-muted-foreground bg-transparent border-transparent px-0 h-auto" readOnly />
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-foreground">De:</h3>
+                <Dialog open={isCompanyModalOpen} onOpenChange={setCompanyModalOpen}>
+                  <DialogTrigger asChild>
+                    {companyList.length > 0 ? (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        type="button"
+                        onClick={() => openCompanyModal('list')}
+                        className="rounded-full mr-3 hover:bg-muted transition-all size-10"
+                        title="Seleccionar o crear empresa"
+                      >
+                        <PencilIcon className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        type="button"
+                        onClick={() => openCompanyModal('create')}
+                        className="gap-1.5 rounded-xl text-xs"
+                      >
+                        <PlusIcon className="w-3.5 h-3.5" />
+                        <span>Crear Empresa</span>
+                      </Button>
+                    )}
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    {companyModalMode === 'list' ? (
+                      <>
+                        <DialogHeader className="flex-row items-center justify-between pt-6">
+                          <div>
+                            <DialogTitle>Tu Empresa</DialogTitle>
+                            <DialogDescription>Selecciona la empresa emisora de la factura.</DialogDescription>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setCompanyModalMode('create')}
+                          >
+                            <span className="mr-1.5">+</span> Crear Empresa
+                          </Button>
+                        </DialogHeader>
+                        <Separator />
+                        <div className="flex flex-col space-y-1 max-h-[300px] overflow-y-auto">
+                          {companyList.map((comp) => (
+                            <div
+                              key={comp.id}
+                              onClick={() => {
+                                setSelectedCompany(comp);
+                                setCompanyModalOpen(false);
+                              }}
+                              className="flex items-center justify-between gap-3 p-3 hover:bg-muted rounded-md cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10 border border-border">
+                                  <AvatarImage src={comp.image_url || ''} alt={comp.name} />
+                                  <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
+                                    {getInitials(comp.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-foreground">{comp.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {comp.email || comp.address || 'Sin datos adicionales'}
+                                  </p>
+                                </div>
+                              </div>
+                              {selectedCompany?.id === comp.id && (
+                                <Badge variant="secondary" className="text-[10px]">Seleccionada</Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <DialogHeader className="pt-4">
+                          <DialogTitle>Crear Tu Empresa</DialogTitle>
+                          <DialogDescription>
+                            Configura los datos comerciales que figurarán como emisor en tus facturas.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Separator />
+                        <div className="space-y-4 py-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="comp_name" className="text-xs">Nombre de la Empresa o Marca *</Label>
+                            <Input
+                              id="comp_name"
+                              placeholder="Ej. Estudio Avalon / Tu Nombre"
+                              value={newCompName}
+                              onChange={(e) => setNewCompName(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="comp_address" className="text-xs">Dirección Comercial</Label>
+                            <Input
+                              id="comp_address"
+                              placeholder="Ej. Av. Libertador 1234, CABA"
+                              value={newCompAddress}
+                              onChange={(e) => setNewCompAddress(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="comp_email" className="text-xs">Email de Contacto / Facturación</Label>
+                            <Input
+                              id="comp_email"
+                              type="email"
+                              placeholder="contacto@tuempresa.com"
+                              value={newCompEmail}
+                              onChange={(e) => setNewCompEmail(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="comp_tax" className="text-xs">CUIT / Identificación Fiscal (Opcional)</Label>
+                            <Input
+                              id="comp_tax"
+                              placeholder="Ej. 20-12345678-9"
+                              value={newCompTaxId}
+                              onChange={(e) => setNewCompTaxId(e.target.value)}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2">
+                            {companyList.length > 0 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCompanyModalMode('list')}
+                                disabled={isCreatingCompany}
+                              >
+                                Volver
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={handleCreateCompany}
+                              disabled={isCreatingCompany}
+                              className="gap-1.5"
+                            >
+                              {isCreatingCompany && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                              <span>Guardar Empresa</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
+
+              {selectedCompany ? (
+                <div className="flex flex-col gap-y-1.5 mt-2">
+                  <p className="font-semibold text-sm text-foreground">{selectedCompany.name}</p>
+                  {selectedCompany.address && (
+                    <p className="text-xs text-muted-foreground">{selectedCompany.address}</p>
+                  )}
+                  {selectedCompany.email && (
+                    <p className="text-xs text-muted-foreground">{selectedCompany.email}</p>
+                  )}
+                  {selectedCompany.tax_id && (
+                    <p className="text-xs font-mono text-muted-foreground">CUIT/ID: {selectedCompany.tax_id}</p>
+                  )}
+                  <div className="pt-1">
+                    <Badge variant="outline" className="w-fit text-[10px] font-normal border-border">
+                      Empresa Emisora
+                    </Badge>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 p-3 rounded-xl border border-dashed border-border bg-muted/20 flex flex-col items-start gap-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                    <span>No tienes ninguna empresa configurada.</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openCompanyModal('create')}
+                    className="h-8 text-xs gap-1.5 rounded-lg"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    <span>Crear Empresa</span>
+                  </Button>
+                </div>
+              )}
             </div>
 
+            {/* BLOQUE PARA: CLIENTE */}
             <div className="p-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-xl text-foreground">Para:</h3>
@@ -415,7 +655,10 @@ export function CreateInvoiceForm({
           {/* FOOTER */}
           <div className="pt-4 mt-4 border-t border-border text-xs text-muted-foreground py-8">
             <p className="font-medium text-foreground">Atención al Consumidor:</p>
-            <p>Ante cualquier duda o consulta administrativa, contactarse a contacto@tuempresa.com</p>
+            <p>
+              Ante cualquier duda o consulta administrativa, contactarse a{' '}
+              {selectedCompany?.email || 'contacto@tuempresa.com'}
+            </p>
           </div>
         </CardContent>
       </Card>

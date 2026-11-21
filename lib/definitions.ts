@@ -1,9 +1,29 @@
 import { z } from 'zod';
 
+// --- COMPANIES (Empresas Emisoras / Tu Empresa) ---
+export const CompanySchema = z.object({
+  id: z.string(),
+  user_id: z.string().uuid().optional(),
+  name: z.string({
+    message: 'El nombre de la empresa es requerido.',
+  }).min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
+  address: z.string().optional().nullable(),
+  email: z.string().email({
+    message: 'Por favor, introduce un email válido.',
+  }).optional().nullable().or(z.literal('')),
+  phone: z.string().optional().nullable(),
+  tax_id: z.string().optional().nullable(),
+  image_url: z.string().optional().nullable(),
+  is_default: z.boolean().optional().default(false),
+});
+
+export type Company = z.infer<typeof CompanySchema>;
+
 // --- INVOICES (Facturas) ---
 export const InvoiceSchema = z.object({
   id: z.string(),
   user_id: z.string().uuid().optional(),
+  company_id: z.string().uuid().nullable().optional(),
   client_id: z.string().uuid({
     message: 'Debes seleccionar un cliente.',
   }),
@@ -182,6 +202,7 @@ export type InvoiceWithClient = {
 
 export type FullInvoice = Invoice & {
   client: Client;
+  company?: Company | null;
   line_items: LineItem[];
 };
 
@@ -356,4 +377,4 @@ export type DashboardPredictiveStatus = {
   invoices: PredictiveInvoiceStatus;
   agenda: PredictiveAgendaStatus;
 };
-
+

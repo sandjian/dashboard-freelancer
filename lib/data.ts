@@ -1,11 +1,27 @@
 import { sql } from '@vercel/postgres';
 import { resolveUserId } from './auth-guard';
-import { Card, Category, Client, ClientWithStats, Expense, ExpenseWithVendor, ExpenseTemplateWithDetails, Invoice, InvoiceWithClient, Vendor, DashboardPredictiveStatus, CardWithStatement, CalendarEvent } from './definitions';
+import { Card, Category, Client, ClientWithStats, Company, Expense, ExpenseWithVendor, ExpenseTemplateWithDetails, Invoice, InvoiceWithClient, Vendor, DashboardPredictiveStatus, CardWithStatement, CalendarEvent } from './definitions';
 
 const ITEMS_PER_PAGE = 6;
 const ITEMS_PER_PAGE_EXPENSES = 5;
 
-// --- INVOICE FUNCTIONS ---
+// --- INVOICE & COMPANY FUNCTIONS ---
+
+export async function fetchCompanies(userId?: string): Promise<Company[]> {
+  const uid = await resolveUserId(userId);
+  try {
+    const data = await sql<Company>`
+      SELECT id, user_id, name, address, email, phone, tax_id, image_url, is_default
+      FROM companies
+      WHERE user_id = ${uid}
+      ORDER BY is_default DESC, created_at ASC
+    `;
+    return data.rows;
+  } catch (err) {
+    console.error('Database Error in fetchCompanies:', err);
+    return [];
+  }
+}
 
 export async function fetchClients(userId?: string): Promise<Client[]> {
   const uid = await resolveUserId(userId);
@@ -170,9 +186,21 @@ export async function fetchInvoiceById(id: string, userId?: string) {
   const uid = await resolveUserId(userId);
   try {
     const invoiceData = await sql`
-      SELECT invoices.*, clients.name, clients.email
+      SELECT
+        invoices.*,
+        clients.name,
+        clients.email,
+        comp.id AS comp_id,
+        comp.name AS comp_name,
+        comp.address AS comp_address,
+        comp.email AS comp_email,
+        comp.phone AS comp_phone,
+        comp.tax_id AS comp_tax_id,
+        comp.image_url AS comp_image_url,
+        comp.is_default AS comp_is_default
       FROM invoices
       JOIN clients ON invoices.client_id = clients.id
+      LEFT JOIN companies comp ON invoices.company_id = comp.id
       WHERE invoices.id = ${id} AND invoices.user_id = ${uid};
     `;
     const itemsData = await sql`
@@ -187,6 +215,32 @@ export async function fetchInvoiceById(id: string, userId?: string) {
     const invoice = invoiceData.rows[0];
     const lineItems = itemsData.rows;
 
+    // Fallback to user's default company if invoice has no explicit company_id
+    let company: Company | null = null;
+    if (invoice.comp_id) {
+      company = {
+        id: invoice.comp_id,
+        name: invoice.comp_name,
+        address: invoice.comp_address,
+        email: invoice.comp_email,
+        phone: invoice.comp_phone,
+        tax_id: invoice.comp_tax_id,
+        image_url: invoice.comp_image_url,
+        is_default: Boolean(invoice.comp_is_default),
+      };
+    } else {
+      const defaultCompRes = await sql<Company>`
+        SELECT id, user_id, name, address, email, phone, tax_id, image_url, is_default
+        FROM companies
+        WHERE user_id = ${uid}
+        ORDER BY is_default DESC, created_at ASC
+        LIMIT 1
+      `;
+      if (defaultCompRes.rows[0]) {
+        company = defaultCompRes.rows[0];
+      }
+    }
+
     const dueDate = new Date(invoice.due_date);
     let finalStatus = invoice.status;
     if (['pendiente', 'Pendiente'].includes(invoice.status) && dueDate < new Date(new Date().setHours(0, 0, 0, 0))) {
@@ -200,6 +254,7 @@ export async function fetchInvoiceById(id: string, userId?: string) {
 
     return {
       id: invoice.id,
+      company_id: invoice.company_id || company?.id || null,
       client_id: invoice.client_id,
       invoice_number: invoice.invoice_number,
       amount: invoice.amount / 100,
@@ -209,7 +264,8 @@ export async function fetchInvoiceById(id: string, userId?: string) {
       issue_date: new Date(invoice.issue_date),
       due_date: dueDate,
       line_items: processedLineItems,
-      client: { name: invoice.name, email: invoice.email }
+      client: { id: invoice.client_id, name: invoice.name, email: invoice.email },
+      company,
     };
   } catch (error) {
     console.error('Database Error:', error);

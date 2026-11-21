@@ -1,7 +1,7 @@
 import { requireUser } from '@/lib/auth-guard';
 import { EditInvoiceForm } from '@/components/dashboard/finances/invoices/edit-form';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { fetchInvoiceById, fetchClients } from '@/lib/data';
+import { fetchInvoiceById, fetchClients, fetchCompanies } from '@/lib/data';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -10,16 +10,15 @@ export default async function EditInvoicePage({
 }: { 
   params: Promise<{ id: string }> 
 }) {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await params;
 
-  // Buscamos la factura y la lista de clientes en paralelo
-  const [invoice, clients] = await Promise.all([
+  const [invoice, clients, companies] = await Promise.all([
     fetchInvoiceById(id),
     fetchClients(),
+    fetchCompanies(),
   ]);
 
-  // Si la factura no existe, mostramos la página 404
   if (!invoice) {
     notFound();
   }
@@ -36,7 +35,7 @@ export default async function EditInvoicePage({
           </BreadcrumbList>
         </Breadcrumb>
       
-      <EditInvoiceForm invoice={invoice} clients={clients} />
+      <EditInvoiceForm invoice={invoice} clients={clients} companies={companies} />
     </div>
   );
 }
